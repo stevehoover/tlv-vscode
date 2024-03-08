@@ -47,7 +47,7 @@ class tlverilogHoverProvider implements vscode.HoverProvider {
                     return new vscode.Hover([ {language: 'tlverilog', value: declarationText.element}, declarationText.comment ]);
                 } else {
                     return;
-                }
+                 }   
             }
     }
 
