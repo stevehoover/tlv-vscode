@@ -3,7 +3,7 @@
 	"name": "TL Verilog Dark",
 	"type": "dark",
 	"colors": {
-		"editor.background": "#000000",
+		"editor.background": "#1e1e1e",
         "editor.foreground": "#FFFFFF",
         "editor.inactiveSelectionBackground": "#3A3A3A",
         "editorIndentGuide.background": "#2A2A2A",
@@ -58,7 +58,7 @@
 			"name": "M4 Macro",
 			"scope": "support.macro.tlverilog",
 			"settings": {
-				"foreground": "#000000",
+				"foreground": "#ffffff",
 				"fontStyle": "bold"
 			}
 		},
@@ -88,7 +88,7 @@
 			"name": "Code Region Id",
 			"scope": "keyword.region.tlverilog",
 			"settings": {
-				"foreground": "#00008b",
+				"foreground": "#7d7dee",
 				"fontStyle": "bold"
 			}
 		},
@@ -203,7 +203,7 @@
 				"entity.other.attribute-name.scss"
 			],
 			"settings": {
-				"foreground": "#800000"
+				"foreground": "#e4d2d2"
 			}
 		},
 		{
