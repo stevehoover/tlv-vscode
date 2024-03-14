@@ -12,24 +12,37 @@
 	},
 	"categories": [
 		"Languages",
-		 "Themes"
+		"Themes"
 	],
 	"contributes": {
-		"languages": [{
-			"id": "tlverilog",
-			"aliases": ["TL Verilog", "tlverilog", "tl-verilog"],
-			"extensions": [".tlv", ".TLV"],
-			"configuration": "./language-configuration.json"
-		}],
-		"grammars": [{
-			"language": "tlverilog",
-			"scopeName": "source.tlverilog",
-			"path": "./syntaxes/tlverilog.tmLanguage"
-		}],
-		"snippets": [{
-			"language": "tlverilog",
-			"path": "./snippets/snippets.json"
-		}],
+		"languages": [
+			{
+				"id": "tlverilog",
+				"aliases": [
+					"TL Verilog",
+					"tlverilog",
+					"tl-verilog"
+				],
+				"extensions": [
+					".tlv",
+					".TLV"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "tlverilog",
+				"scopeName": "source.tlverilog",
+				"path": "./syntaxes/tlverilog.tmLanguage"
+			}
+		],
+		"snippets": [
+			{
+				"language": "tlverilog",
+				"path": "./snippets/snippets.json"
+			}
+		],
 		"configuration": {
 			"title": "",
 			"properties": {
@@ -40,17 +53,24 @@
 				}
 			}
 		},
-		"commands": [{
-			"command": "extension.tlverilog.instantiateModule",
-			"title": "TL Verilog: Instantiate Module"
-		}],
+		"commands": [
+			{
+				"command": "extension.tlverilog.instantiateModule",
+				"title": "TL Verilog: Instantiate Module"
+			}
+		],
 		"themes": [
-            {
-                "label": "TLVerilog",
-                "uiTheme": "vs",
-                "path": "./themes/tlverilog-color-theme.json"
-            }
-        ]
+			{
+				"label": "TLVerilog",
+				"uiTheme": "vs",
+				"path": "./themes/tlverilog-color-theme.json"
+			},
+			{
+				"label": "TL Verilog Dark",
+				"uiTheme": "vs-dark",
+				"path": "./themes/tlverilog-color-theme-dark.json"
+			}
+		]
 	},
 	"activationEvents": [
 		"onLanguage:tlverilog"
@@ -62,9 +82,12 @@
 		"postinstall": "node ./node_modules/vscode/bin/install"
 	},
 	"devDependencies": {
+		"@types/node": "*",
+		"typescript": "^2.9.2",
 		"vsce": "^1.28.0",
-		"typescript": "^2.0.3",
-		"vscode": "^1.0.0",
-		"@types/node": "*"
+		"vscode": "^1.0.0"
+	},
+	"dependencies": {
+		"install": "^0.13.0"
 	}
 }
