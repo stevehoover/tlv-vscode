@@ -10,7 +10,8 @@ import axios from "axios";
 export function activate(context: vscode.ExtensionContext) {
   const sandpiperButton = new SandPiperButton();
   sandpiperButton.show();
- 
+  const svgButton = new SvgButton();
+  svgButton.show();
   const sandpiperCommand = vscode.commands.registerCommand(
     "extension.sandpiperSaas",
     async () => {
