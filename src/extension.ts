@@ -10,6 +10,7 @@ import axios from "axios";
 export function activate(context: vscode.ExtensionContext) {
   const sandpiperButton = new SandPiperButton();
   sandpiperButton.show();
+ 
   const sandpiperCommand = vscode.commands.registerCommand(
     "extension.sandpiperSaas",
     async () => {
@@ -37,6 +38,8 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
   context.subscriptions.push(sandpiperCommand);
+
+  
 
   // System Verilog Hover Provider
   context.subscriptions.push(
@@ -434,3 +437,52 @@ export function deactivate(sandpiperButton: SandPiperButton) {
     sandpiperButton.dispose();
   }
 }
+
+async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<string> {
+    const externSettings =
+      vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") || [];
+    const args = `-i test.tlv --graphTrans --svg ${externSettings.join(" ")} --iArgs`;
+  
+    try {
+      const response = await axios.post(
+        "https://faas.makerchip.com/function/sandpiper-faas",
+        JSON.stringify({
+          args,
+          responseType: "json",
+          sv_url_inc: true,
+          files: {
+            "test.tlv": tlvCode,
+          },
+        }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      if (response.status !== 200) {
+        throw new Error(`SandPiper SaaS request failed with status ${response.status}`);
+      }
+  
+      const data = response.data;
+      if (data["out/test.m5out_graph.svg"]) {
+        const outputDirectory = path.dirname(inputFilePath);
+        const svgFilePath = path.join(outputDirectory, "test.m5out_graph.svg");
+        fs.writeFileSync(svgFilePath, data["out/test.m5out_graph.svg"]);
+        return svgFilePath;
+      } else {
+        throw new Error("SandPiper SaaS compilation failed: No SVG output generated.");
+      }
+    } catch (error) {
+      let errorMessage = "SandPiper SaaS compilation failed: ";
+      if (axios.isAxiosError(error)) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += error;
+      }
+      vscode.window.showErrorMessage(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }
+  
