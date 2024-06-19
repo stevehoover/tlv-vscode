@@ -528,3 +528,37 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
     panel.webview.html = webviewContent;
   }
   
+  class SvgButton implements vscode.StatusBarItem {
+    private statusBarItem: vscode.StatusBarItem;
+  
+    alignment: vscode.StatusBarAlignment;
+    priority: number;
+    text: string;
+    tooltip: string;
+    color: string;
+    command: string | undefined;
+  
+    constructor(alignment: vscode.StatusBarAlignment = vscode.StatusBarAlignment.Left, priority: number = 1) {
+      this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
+      this.statusBarItem.command = "extension.showSvg";
+      this.statusBarItem.text = "$(file-media) SVG";
+      this.statusBarItem.tooltip = "Generate and view TL-Verilog SVG diagram";
+      this.text = "$(file-media) SVG";
+      this.tooltip = "Generate and view TL-Verilog SVG diagram";
+      this.alignment = alignment;
+      this.priority = priority;
+    }
+  
+    show() {
+      this.statusBarItem.show();
+    }
+  
+    hide() {
+      this.statusBarItem.hide();
+    }
+  
+    dispose() {
+      this.statusBarItem.dispose();
+    }
+  }
+  
