@@ -252,7 +252,9 @@ function instantiateModuleInteract() {
         let inst = instantiateModule(srcpath);
         vscode.window.activeTextEditor.insertSnippet(inst);
     });
-}async function compileTLVerilogWithSandPiper(tlvCode: string): Promise<string> {
+}
+
+async function compileTLVerilogWithSandPiper(tlvCode: string): Promise<string> {
     const externSettings =
       vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") || [];
     const args = `-i test.tlv -o test.sv --m4out out/m4out ${externSettings.join(" ")} --iArgs`;
@@ -301,8 +303,8 @@ function instantiateModuleInteract() {
       throw new Error(errorMessage);
     }
   }
-  
 
+  
   class SandPiperButton implements vscode.StatusBarItem {
     private statusBarItem: vscode.StatusBarItem;
   
@@ -313,15 +315,15 @@ function instantiateModuleInteract() {
     color: string;
     command: string | undefined;
   
-    constructor() {
-      this.statusBarItem = vscode.window.createStatusBarItem(
-        vscode.StatusBarAlignment.Left
-      );
+    constructor(alignment: vscode.StatusBarAlignment = vscode.StatusBarAlignment.Left, priority: number = 0) {
+      this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
       this.statusBarItem.command = "extension.sandpiperSaas";
       this.statusBarItem.text = "$(rocket) SandPiper";
       this.statusBarItem.tooltip = "Compile TL-Verilog using SandPiper SaaS";
       this.text = "$(rocket) SandPiper";
       this.tooltip = "Compile TL-Verilog using SandPiper SaaS";
+      this.alignment = alignment;
+      this.priority = priority;
     }
   
     show() {
@@ -338,8 +340,9 @@ function instantiateModuleInteract() {
   }
   
   export function deactivate(sandpiperButton: SandPiperButton) {
-    
-    sandpiperButton.hide();
-    sandpiperButton.dispose();
+    if (sandpiperButton) {
+      sandpiperButton.hide();
+      sandpiperButton.dispose();
+    }
   }
   
