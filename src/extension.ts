@@ -8,6 +8,11 @@ import axios from "axios";
 // This method is called when your extension is activated. Activation is
 // controlled by the activation events defined in package.json.
 export function activate(context: vscode.ExtensionContext) {
+
+    const sandpiperButton = new SandPiperButton();
+    sandpiperButton.show();
+
+
     // System Verilog Hover Provider
     context.subscriptions.push(
         vscode.languages.registerHoverProvider('tlverilog',
@@ -304,7 +309,7 @@ async function compileTLVerilogWithSandPiper(tlvCode: string): Promise<string> {
     }
   }
 
-  
+
   class SandPiperButton implements vscode.StatusBarItem {
     private statusBarItem: vscode.StatusBarItem;
   
