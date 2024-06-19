@@ -486,3 +486,32 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
     }
   }
   
+  function showSvgInWebview(svgFilePath: string) {
+    const panel = vscode.window.createWebviewPanel(
+      "svgViewer",
+      "TL-Verilog SVG Viewer",
+      vscode.ViewColumn.Two,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+      }
+    );
+  
+    const svg = fs.readFileSync(svgFilePath, "utf8");
+    const webviewContent = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TL-Verilog SVG Viewer</title>
+      </head>
+      <body>
+        ${svg}
+      </body>
+      </html>
+    `;
+  
+    panel.webview.html = webviewContent;
+  }
+  
