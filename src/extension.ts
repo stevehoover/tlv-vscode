@@ -467,7 +467,7 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
   
       const data = response.data;
       if (data["out/test.m5out_graph.svg"]) {
-        const outputDirectory = path.dirname(inputFilePath);
+        const outputDirectory = vscode.workspace.getConfiguration("tlverilog").get("outputDirectory") || path.dirname(inputFilePath);
         const svgFilePath = path.join(outputDirectory, "test.m5out_graph.svg");
         fs.writeFileSync(svgFilePath, data["out/test.m5out_graph.svg"]);
         return svgFilePath;
@@ -482,7 +482,7 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
         errorMessage += error;
       }
       vscode.window.showErrorMessage(errorMessage);
-      throw new Error(errorMessage);  // Added detailed error message to throw
+      throw new Error(errorMessage);
     }
   }
   
