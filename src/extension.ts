@@ -252,3 +252,51 @@ function instantiateModuleInteract() {
         vscode.window.activeTextEditor.insertSnippet(inst);
     });
 }
+async function compileTLVerilogWithSandPiper(tlvCode: string): Promise<string> {
+    const externSettings =
+      vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") || [];
+    const args = `-i test.tlv -o test.sv --m4out out/m4out ${externSettings.join(" ")} --iArgs`;
+  
+    try {
+      const response = await axios.post(
+        "https://faas.makerchip.com/function/sandpiper-faas",
+        JSON.stringify({
+          args,
+          responseType: "json",
+          sv_url_inc: true,
+          files: {
+            "test.tlv": tlvCode,
+          },
+        }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      if (response.status !== 200) {
+        throw new Error(`SandPiper SaaS request failed with status ${response.status}`);
+      }
+  
+      const data = response.data;
+      if (data["out/test.sv"]) {
+        const verilog = (data["out/test.sv"] as string)
+          .replace('`include "test_gen.sv"', "// gen included here\n" + data["out/test_gen.sv"])
+          .split("\n")
+          .filter((line) => !line.startsWith('`include "sp_default.vh"'))
+          .join("\n");
+        return verilog;
+      } else {
+        throw new Error("SandPiper SaaS compilation failed");
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        vscode.window.showErrorMessage(`SandPiper SaaS compilation failed: ${error.message}`);
+      } else {
+        vscode.window.showErrorMessage(`SandPiper SaaS compilation failed: ${error}`);
+      }
+      throw error;
+    }
+  }
+  
