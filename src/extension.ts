@@ -50,7 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
           }
         }
       );
-      
+      context.subscriptions.push(sandpiperCommand);
 
     // System Verilog Hover Provider
     context.subscriptions.push(
