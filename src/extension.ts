@@ -302,3 +302,44 @@ function instantiateModuleInteract() {
     }
   }
   
+
+  class SandPiperButton implements vscode.StatusBarItem {
+    private statusBarItem: vscode.StatusBarItem;
+  
+    alignment: vscode.StatusBarAlignment;
+    priority: number;
+    text: string;
+    tooltip: string;
+    color: string;
+    command: string | undefined;
+  
+    constructor() {
+      this.statusBarItem = vscode.window.createStatusBarItem(
+        vscode.StatusBarAlignment.Left
+      );
+      this.statusBarItem.command = "extension.sandpiperSaas";
+      this.statusBarItem.text = "$(rocket) SandPiper";
+      this.statusBarItem.tooltip = "Compile TL-Verilog using SandPiper SaaS";
+      this.text = "$(rocket) SandPiper";
+      this.tooltip = "Compile TL-Verilog using SandPiper SaaS";
+    }
+  
+    show() {
+      this.statusBarItem.show();
+    }
+  
+    hide() {
+      this.statusBarItem.hide();
+    }
+  
+    dispose() {
+      this.statusBarItem.dispose();
+    }
+  }
+  
+  export function deactivate(sandpiperButton: SandPiperButton) {
+    
+    sandpiperButton.hide();
+    sandpiperButton.dispose();
+  }
+  
