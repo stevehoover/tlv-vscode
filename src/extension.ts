@@ -482,7 +482,7 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
         errorMessage += error;
       }
       vscode.window.showErrorMessage(errorMessage);
-      throw new Error(errorMessage);
+      throw new Error(errorMessage);  // Added detailed error message to throw
     }
   }
   
