@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import axios from "axios";
 
 // This method is called when your extension is activated. Activation is
 // controlled by the activation events defined in package.json.
@@ -251,8 +252,7 @@ function instantiateModuleInteract() {
         let inst = instantiateModule(srcpath);
         vscode.window.activeTextEditor.insertSnippet(inst);
     });
-}
-async function compileTLVerilogWithSandPiper(tlvCode: string): Promise<string> {
+}async function compileTLVerilogWithSandPiper(tlvCode: string): Promise<string> {
     const externSettings =
       vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") || [];
     const args = `-i test.tlv -o test.sv --m4out out/m4out ${externSettings.join(" ")} --iArgs`;
@@ -288,15 +288,17 @@ async function compileTLVerilogWithSandPiper(tlvCode: string): Promise<string> {
           .join("\n");
         return verilog;
       } else {
-        throw new Error("SandPiper SaaS compilation failed");
+        throw new Error("SandPiper SaaS compilation failed: No output generated.");
       }
     } catch (error) {
+      let errorMessage = "SandPiper SaaS compilation failed: ";
       if (axios.isAxiosError(error)) {
-        vscode.window.showErrorMessage(`SandPiper SaaS compilation failed: ${error.message}`);
+        errorMessage += error.message;
       } else {
-        vscode.window.showErrorMessage(`SandPiper SaaS compilation failed: ${error}`);
+        errorMessage += error;
       }
-      throw error;
+      vscode.window.showErrorMessage(errorMessage);
+      throw new Error(errorMessage);
     }
   }
   
