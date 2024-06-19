@@ -11,7 +11,46 @@ export function activate(context: vscode.ExtensionContext) {
 
     const sandpiperButton = new SandPiperButton();
     sandpiperButton.show();
-
+    const sandpiperCommand = vscode.commands.registerCommand(
+        "extension.sandpiperSaas",
+        async () => {
+          const editor = vscode.window.activeTextEditor;
+          if (editor) {
+            const document = editor.document;
+            if (document.languageId === "tlverilog") {
+              const tlvCode = document.getText();
+              try {
+                const fetch = require("node-fetch");
+                const verilogCode = await compileTLVerilogWithSandPiper(tlvCode);
+      
+                // Create a new untitled document with 'verilog' language mode
+                const newDocument = await vscode.workspace.openTextDocument({
+                  language: "verilog",
+                });
+      
+                // Open the new document in an editor
+                const newEditor = await vscode.window.showTextDocument(newDocument);
+      
+                // Insert the content into the new document
+                await newEditor.edit((editBuilder) => {
+                  editBuilder.insert(new vscode.Position(0, 0), verilogCode);
+                });
+              } catch (error) {
+                vscode.window.showErrorMessage(
+                  `SandPiper SaaS compilation failed: ${error.message}`
+                );
+              }
+            } else {
+              vscode.window.showInformationMessage(
+                "The active file is not a TL-Verilog file."
+              );
+            }
+          } else {
+            vscode.window.showInformationMessage("No active text editor found.");
+          }
+        }
+      );
+      
 
     // System Verilog Hover Provider
     context.subscriptions.push(
