@@ -40,8 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(sandpiperCommand);
 
-  // Register showSvgCommand
-const showSvgCommand = vscode.commands.registerCommand(
+  const showSvgCommand = vscode.commands.registerCommand(
     "extension.showSvg",
     async () => {
       const editor = vscode.window.activeTextEditor;
@@ -68,9 +67,7 @@ const showSvgCommand = vscode.commands.registerCommand(
       }
     }
   );
-  
   context.subscriptions.push(showSvgCommand);
-  
 
   // System Verilog Hover Provider
   context.subscriptions.push(
@@ -462,12 +459,6 @@ class SandPiperButton implements vscode.StatusBarItem {
   }
 }
 
-export function deactivate(sandpiperButton: SandPiperButton) {
-  if (sandpiperButton) {
-    sandpiperButton.hide();
-    sandpiperButton.dispose();
-  }
-}
 
 async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<string> {
     const externSettings =
@@ -498,7 +489,7 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
   
       const data = response.data;
       if (data["out/test.m5out_graph.svg"]) {
-        const outputDirectory = vscode.workspace.getConfiguration("tlverilog").get("outputDirectory") || path.dirname(inputFilePath);
+        const outputDirectory = path.dirname(inputFilePath);
         const svgFilePath = path.join(outputDirectory, "test.m5out_graph.svg");
         fs.writeFileSync(svgFilePath, data["out/test.m5out_graph.svg"]);
         return svgFilePath;
@@ -516,10 +507,11 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       throw new Error(errorMessage);
     }
   }
+
   function showSvgInWebview(svgFilePath: string) {
     const panel = vscode.window.createWebviewPanel(
       "svgViewer",
-      `TL-Verilog SVG Viewer - ${path.basename(svgFilePath)}`,
+      "TL-Verilog SVG Viewer",
       vscode.ViewColumn.Two,
       {
         enableScripts: true,
@@ -534,21 +526,7 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TL-Verilog SVG Viewer - ${path.basename(svgFilePath)}</title>
-        <style>
-          body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-          }
-          svg {
-            max-width: 100%;
-            max-height: 100%;
-          }
-        </style>
+        <title>TL-Verilog SVG Viewer</title>
       </head>
       <body>
         ${svg}
@@ -558,7 +536,7 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
   
     panel.webview.html = webviewContent;
   }
-  
+
   class SvgButton implements vscode.StatusBarItem {
     private statusBarItem: vscode.StatusBarItem;
   
@@ -592,4 +570,15 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       this.statusBarItem.dispose();
     }
   }
+
+  export function deactivate(sandpiperButton: SandPiperButton, svgButton: SvgButton) {
+    if (sandpiperButton) {
+      sandpiperButton.hide();
+      sandpiperButton.dispose();
+    }
   
+    if (svgButton) {
+      svgButton.hide();
+      svgButton.dispose();
+    }
+  }
