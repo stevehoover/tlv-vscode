@@ -39,6 +39,36 @@ export function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(sandpiperCommand);
 
+  // Register showSvgCommand
+const showSvgCommand = vscode.commands.registerCommand(
+    "extension.showSvg",
+    async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        const document = editor.document;
+        if (document.languageId === "tlverilog") {
+          const tlvCode = document.getText();
+          const inputFilePath = document.fileName;
+          try {
+            const svgFilePath = await generateSvgFile(tlvCode, inputFilePath);
+            showSvgInWebview(svgFilePath);
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Failed to generate SVG: ${error.message}`
+            );
+          }
+        } else {
+          vscode.window.showInformationMessage(
+            "The active file is not a TL-Verilog file."
+          );
+        }
+      } else {
+        vscode.window.showInformationMessage("No active text editor found.");
+      }
+    }
+  );
+  
+  context.subscriptions.push(showSvgCommand);
   
 
   // System Verilog Hover Provider
