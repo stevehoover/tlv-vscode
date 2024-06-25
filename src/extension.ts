@@ -12,6 +12,9 @@ export function activate(context: vscode.ExtensionContext) {
   sandpiperButton.show();
   const svgButton = new SvgButton();
   svgButton.show();
+  const navTlvButton = new NavTlvButton();
+  navTlvButton.show();
+  
   const sandpiperCommand = vscode.commands.registerCommand(
     "extension.sandpiperSaas",
     async () => {
@@ -68,6 +71,36 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
   context.subscriptions.push(showSvgCommand);
+
+
+  const showNavTlvCommand = vscode.commands.registerCommand(
+    "extension.showNavTlv",
+    async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        const document = editor.document;
+        if (document.languageId === "tlverilog") {
+          const tlvCode = document.getText();
+          try {
+            const navTlvHtml = await generateNavTlvHtml(tlvCode);
+            showNavTlvInWebview(navTlvHtml);
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Failed to generate Nav TLV: ${error.message}`
+            );
+          }
+        } else {
+          vscode.window.showInformationMessage(
+            "The active file is not a TL-Verilog file."
+          );
+        }
+      } else {
+        vscode.window.showInformationMessage("No active text editor found.");
+      }
+    }
+  );
+  context.subscriptions.push(showNavTlvCommand);
+
 
   // System Verilog Hover Provider
   context.subscriptions.push(
@@ -571,14 +604,118 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
     }
   }
 
-  export function deactivate(sandpiperButton: SandPiperButton, svgButton: SvgButton) {
-    if (sandpiperButton) {
-      sandpiperButton.hide();
-      sandpiperButton.dispose();
+  async function generateNavTlvHtml(tlvCode: string): Promise<string> {
+    const externSettings =
+      vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") || [];
+    const args = `-i test.tlv -o gene.sv --dhtml ${externSettings.join(" ")} --iArgs`;
+  
+    try {
+      const response = await axios.post(
+        "https://faas.makerchip.com/function/sandpiper-faas",
+        JSON.stringify({
+          args,
+          responseType: "json",
+          sv_url_inc: true,
+          files: {
+            "test.tlv": tlvCode,
+          },
+        }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      if (response.status !== 200) {
+        throw new Error(`SandPiper SaaS request failed with status ${response.status}`);
+      }
+  
+      const data = response.data;
+      if (data["out/test.m5out.html"]) {
+        return data["out/test.m5out.html"];
+      } else {
+        throw new Error("SandPiper SaaS compilation failed: No HTML output generated.");
+      }
+    } catch (error) {
+      let errorMessage = "SandPiper SaaS compilation failed: ";
+      if (axios.isAxiosError(error)) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += error;
+      }
+      vscode.window.showErrorMessage(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }
+
+  function showNavTlvInWebview(navTlvHtml: string,) {
+    const panel = vscode.window.createWebviewPanel(
+      "navTlvViewer",
+      "Nav TLV Viewer",
+      vscode.ViewColumn.Two,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+      }
+    );
+  
+    // Modify the HTML to include necessary styles and scripts for Nav TLV mode
+    const modifiedHtml = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Nav TLV Viewer</title>
+        <style>
+          body { font-family: Arial, sans-serif; }
+          .nav-tlv-content { white-space: pre; font-family: monospace; }
+        </style>
+      </head>
+      <body>
+        <div class="nav-tlv-content">${navTlvHtml}</div>
+        <script>
+          
+        </script>
+      </body>
+      </html>
+    `;
+  
+    panel.webview.html = modifiedHtml;
+  }
+
+  
+  class NavTlvButton implements vscode.StatusBarItem {
+    private statusBarItem: vscode.StatusBarItem;
+  
+    alignment: vscode.StatusBarAlignment;
+    priority: number;
+    text: string;
+    tooltip: string;
+    color: string;
+    command: string | undefined;
+  
+    constructor(alignment: vscode.StatusBarAlignment = vscode.StatusBarAlignment.Left, priority: number = 3) {
+      this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
+      this.statusBarItem.command = "extension.showNavTlv";
+      this.statusBarItem.text = "$(list-tree) Nav TLV";
+      this.statusBarItem.tooltip = "Open Nav TLV Viewer";
+      this.text = "$(list-tree) Nav TLV";
+      this.tooltip = "Open Nav TLV Viewer";
+      this.alignment = alignment;
+      this.priority = priority;
     }
   
-    if (svgButton) {
-      svgButton.hide();
-      svgButton.dispose();
+    show() {
+      this.statusBarItem.show();
+    }
+  
+    hide() {
+      this.statusBarItem.hide();
+    }
+  
+    dispose() {
+      this.statusBarItem.dispose();
     }
   }
