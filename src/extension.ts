@@ -719,3 +719,19 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       this.statusBarItem.dispose();
     }
   }
+
+  export function deactivate(sandpiperButton: SandPiperButton, svgButton: SvgButton , navTlvButton: NavTlvButton ) {
+    if (sandpiperButton) {
+      sandpiperButton.hide();
+      sandpiperButton.dispose();
+    }
+  
+    if (svgButton) {
+      svgButton.hide();
+      svgButton.dispose();
+    }
+    if (navTlvButton) {
+      navTlvButton.hide();
+      navTlvButton.dispose();
+    }
+  }
