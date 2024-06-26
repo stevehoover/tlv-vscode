@@ -813,9 +813,41 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
        if (!fs.existsSync(cppTestbenchPath)) {
         await generateCppTestbench(filePath, cppTestbenchPath);
       }
+      
   
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to generate waveform: ${error.message}`);
     }
   }
   
+  async function generateCppTestbench(verilogFilePath: string, cppTestbenchPath: string) {
+    const moduleName = path.basename(verilogFilePath, path.extname(verilogFilePath));
+    const testbenchContent = `
+  #include "V${moduleName}.h"
+  #include "verilated.h"
+  #include "verilated_vcd_c.h"
+  
+  int main(int argc, char** argv) {
+      Verilated::commandArgs(argc, argv);
+      V${moduleName}* top = new V${moduleName};
+  
+      Verilated::traceEverOn(true);
+      VerilatedVcdC* tfp = new VerilatedVcdC;
+      top->trace(tfp, 99);
+      tfp->open("${moduleName}.vcd");
+  
+      // Simulate for 100 time units
+      for (int i = 0; i < 100; i++) {
+          top->eval();
+          tfp->dump(i);
+      }
+  
+      tfp->close();
+      delete top;
+      return 0;
+  }
+  `;
+  
+    fs.writeFileSync(cppTestbenchPath, testbenchContent);
+    vscode.window.showInformationMessage(`Generated C++ testbench at ${cppTestbenchPath}`);
+  }
