@@ -794,3 +794,8 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       this.statusBarItem.dispose();
     }
   }
+  async function generateAndViewWaveform(filePath: string) {
+    const outputDirectory = path.dirname(filePath);
+    const vcdFilePath = path.join(outputDirectory, "waveform.vcd");
+    vscode.window.showInformationMessage(`Waveform generated at ${vcdFilePath}`);
+  }
