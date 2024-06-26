@@ -815,7 +815,11 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       }
       await compileWithVerilator(filePath, cppTestbenchPath, outputDirectory);
       await runSimulation(fileName, outputDirectory);
-  
+
+      const document = await vscode.workspace.openTextDocument(vcdFilePath);
+    await vscode.window.showTextDocument(document, vscode.ViewColumn.Two);
+
+    vscode.window.showInformationMessage(`Waveform generated at ${vcdFilePath}`);
   
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to generate waveform: ${error.message}`);
