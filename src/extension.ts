@@ -102,7 +102,27 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(showNavTlvCommand);
 
 
-  
+  const generateWaveformCommand = vscode.commands.registerCommand(
+    "extension.generateWaveform",
+    async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        const document = editor.document;
+        if (document.languageId === "systemverilog" || document.languageId === "verilog") {
+          try {
+            await generateAndViewWaveform(document.fileName);
+          } catch (error) {
+            vscode.window.showErrorMessage(`Failed to generate waveform: ${error.message}`);
+          }
+        } else {
+          vscode.window.showInformationMessage("The active file is not a SystemVerilog or Verilog file.");
+        }
+      } else {
+        vscode.window.showInformationMessage("No active text editor found.");
+      }
+    }
+  );
+  context.subscriptions.push(generateWaveformCommand);
 
   // System Verilog Hover Provider
   context.subscriptions.push(
