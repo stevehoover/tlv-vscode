@@ -14,6 +14,9 @@ export function activate(context: vscode.ExtensionContext) {
   svgButton.show();
   const navTlvButton = new NavTlvButton();
   navTlvButton.show();
+  const waveformButton = new WaveformButton();
+  waveformButton.show();
+
   
   const sandpiperCommand = vscode.commands.registerCommand(
     "extension.sandpiperSaas",
