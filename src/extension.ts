@@ -868,3 +868,18 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       throw new Error(`Verilator compilation failed: ${error.message}`);
     }
   }
+
+
+async function runSimulation(moduleName: string, outputDirectory: string) {
+  const command = `make -C obj_dir -f V${moduleName}.mk V${moduleName} && ./obj_dir/V${moduleName}`;
+
+  try {
+    const { stdout, stderr } = await exec(command, { cwd: outputDirectory });
+    if (stderr) {
+      throw new Error(stderr);
+    }
+    vscode.window.showInformationMessage('Simulation completed successfully');
+  } catch (error) {
+    throw new Error(`Simulation failed: ${error.message}`);
+  }
+}
