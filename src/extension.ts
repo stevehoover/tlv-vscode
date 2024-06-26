@@ -745,7 +745,7 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
     }
   }
 
-  export function deactivate(sandpiperButton: SandPiperButton, svgButton: SvgButton , navTlvButton: NavTlvButton ) {
+  export function deactivate(sandpiperButton: SandPiperButton, svgButton: SvgButton , navTlvButton: NavTlvButton , waveformButton: WaveformButton) {
     if (sandpiperButton) {
       sandpiperButton.hide();
       sandpiperButton.dispose();
@@ -759,6 +759,11 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       navTlvButton.hide();
       navTlvButton.dispose();
     }
+    if (waveformButton) {
+      waveformButton.hide();
+      waveformButton.dispose();
+    }
+  
   }
 
   class WaveformButton implements vscode.StatusBarItem {
