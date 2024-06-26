@@ -4,6 +4,8 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import axios from "axios";
+import * as child_process from "child_process";
+import * as util from "util";
 
 // This method is called when your extension is activated. Activation is
 // controlled by the activation events defined in package.json.
@@ -799,8 +801,21 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       this.statusBarItem.dispose();
     }
   }
+  const exec = util.promisify(child_process.exec);
+
   async function generateAndViewWaveform(filePath: string) {
     const outputDirectory = path.dirname(filePath);
-    const vcdFilePath = path.join(outputDirectory, "waveform.vcd");
-    vscode.window.showInformationMessage(`Waveform generated at ${vcdFilePath}`);
+    const fileName = path.basename(filePath, path.extname(filePath));
+    const vcdFilePath = path.join(outputDirectory, `${fileName}.vcd`);
+    const cppTestbenchPath = path.join(outputDirectory, `${fileName}_tb.cpp`);
+  
+    try {
+       if (!fs.existsSync(cppTestbenchPath)) {
+        await generateCppTestbench(filePath, cppTestbenchPath);
+      }
+  
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to generate waveform: ${error.message}`);
+    }
   }
+  
