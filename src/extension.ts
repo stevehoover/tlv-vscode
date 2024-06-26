@@ -813,7 +813,9 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
        if (!fs.existsSync(cppTestbenchPath)) {
         await generateCppTestbench(filePath, cppTestbenchPath);
       }
-      
+      await compileWithVerilator(filePath, cppTestbenchPath, outputDirectory);
+      await runSimulation(fileName, outputDirectory);
+  
   
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to generate waveform: ${error.message}`);
