@@ -102,6 +102,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(showNavTlvCommand);
 
 
+  
+
   // System Verilog Hover Provider
   context.subscriptions.push(
     vscode.languages.registerHoverProvider(
@@ -733,5 +735,39 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
     if (navTlvButton) {
       navTlvButton.hide();
       navTlvButton.dispose();
+    }
+  }
+
+  class WaveformButton implements vscode.StatusBarItem {
+    private statusBarItem: vscode.StatusBarItem;
+  
+    alignment: vscode.StatusBarAlignment;
+    priority: number;
+    text: string;
+    tooltip: string;
+    color: string;
+    command: string | undefined;
+  
+    constructor(alignment: vscode.StatusBarAlignment = vscode.StatusBarAlignment.Left, priority: number = 2) {
+      this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
+      this.statusBarItem.command = "extension.generateWaveform";
+      this.statusBarItem.text = "$(pulse) Waveform";
+      this.statusBarItem.tooltip = "Generate and view waveform";
+      this.text = "$(pulse) Waveform";
+      this.tooltip = "Generate and view waveform";
+      this.alignment = alignment;
+      this.priority = priority;
+    }
+  
+    show() {
+      this.statusBarItem.show();
+    }
+  
+    hide() {
+      this.statusBarItem.hide();
+    }
+  
+    dispose() {
+      this.statusBarItem.dispose();
     }
   }
