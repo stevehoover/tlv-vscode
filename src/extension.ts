@@ -853,3 +853,18 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
     fs.writeFileSync(cppTestbenchPath, testbenchContent);
     vscode.window.showInformationMessage(`Generated C++ testbench at ${cppTestbenchPath}`);
   }
+
+  async function compileWithVerilator(verilogFilePath: string, cppTestbenchPath: string, outputDirectory: string) {
+    const moduleName = path.basename(verilogFilePath, path.extname(verilogFilePath));
+    const command = `verilator -Wall --trace -cc ${verilogFilePath} --exe ${cppTestbenchPath} -o ${moduleName}_sim`;
+  
+    try {
+      const { stdout, stderr } = await exec(command, { cwd: outputDirectory });
+      if (stderr) {
+        throw new Error(stderr);
+      }
+      vscode.window.showInformationMessage('Verilator compilation successful');
+    } catch (error) {
+      throw new Error(`Verilator compilation failed: ${error.message}`);
+    }
+  }
