@@ -19,8 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
   const waveformButton = new WaveformButton();
   waveformButton.show();
 
-  
-  const sandpiperCommand = vscode.commands.registerCommand(
+  const conversionCommand = vscode.commands.registerCommand(
     "extension.sandpiperSaas",
     async () => {
       const editor = vscode.window.activeTextEditor;
@@ -46,7 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }
   );
-  context.subscriptions.push(sandpiperCommand);
+  context.subscriptions.push(conversionCommand);
 
   const showSvgCommand = vscode.commands.registerCommand(
     "extension.showSvg",
@@ -77,7 +76,6 @@ export function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(showSvgCommand);
 
-
   const showNavTlvCommand = vscode.commands.registerCommand(
     "extension.showNavTlv",
     async () => {
@@ -106,21 +104,27 @@ export function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(showNavTlvCommand);
 
-
   const generateWaveformCommand = vscode.commands.registerCommand(
     "extension.generateWaveform",
     async () => {
       const editor = vscode.window.activeTextEditor;
       if (editor) {
         const document = editor.document;
-        if (document.languageId === "systemverilog" || document.languageId === "verilog") {
+        if (
+          document.languageId === "systemverilog" ||
+          document.languageId === "verilog"
+        ) {
           try {
             await generateAndViewWaveform(document.fileName);
           } catch (error) {
-            vscode.window.showErrorMessage(`Failed to generate waveform: ${error.message}`);
+            vscode.window.showErrorMessage(
+              `Failed to generate waveform: ${error.message}`
+            );
           }
         } else {
-          vscode.window.showInformationMessage("The active file is not a SystemVerilog or Verilog file.");
+          vscode.window.showInformationMessage(
+            "The active file is not a SystemVerilog or Verilog file."
+          );
         }
       } else {
         vscode.window.showInformationMessage("No active text editor found.");
@@ -412,12 +416,15 @@ async function compileTLVerilogWithSandPiper(
   tlvCode: string,
   inputFilePath: string
 ): Promise<void> {
+  const filename = path.basename(inputFilePath);
+  console.log(filename);
   const externSettings =
     vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") ||
     [];
-  const args = `-i test.tlv -o test.sv --m4out out/m4out ${externSettings.join(
-    " "
-  )} --iArgs`;
+  const args = `-i ${filename} -o ${filename.replace(
+    ".tlv",
+    ".sv"
+  )} --m4out out/m4out ${externSettings.join(" ")} --iArgs`;
 
   try {
     const response = await axios.post(
@@ -427,7 +434,7 @@ async function compileTLVerilogWithSandPiper(
         responseType: "json",
         sv_url_inc: true,
         files: {
-          "test.tlv": tlvCode,
+          [filename]: tlvCode,
         },
       }),
       {
@@ -442,13 +449,19 @@ async function compileTLVerilogWithSandPiper(
         `SandPiper SaaS request failed with status ${response.status}`
       );
     }
-
     const data = response.data;
-    if (data["out/test.sv"]) {
-      const verilog = (data["out/test.sv"] as string)
+    const outputKey = Object.keys(data).find(
+      (key) => key.startsWith("out/") && key.endsWith(".sv")
+    );
+    const genKey = Object.keys(data).find(
+      (key) => key.startsWith("out/") && key.endsWith("_gen.sv")
+    );
+
+    if (outputKey && genKey) {
+      const verilog = (data[outputKey] as string)
         .replace(
-          '`include "test_gen.sv"',
-          "// gen included here\n" + data["out/test_gen.sv"]
+          `\`include "${path.basename(genKey)}"`,
+          "// gen included here\n" + data[genKey]
         )
         .split("\n")
         .filter((line) => !line.startsWith('`include "sp_default.vh"'))
@@ -456,18 +469,22 @@ async function compileTLVerilogWithSandPiper(
 
       // Save the generated Verilog code to files in the same directory as the input file
       const outputDirectory = path.dirname(inputFilePath);
-      const outputFilePath = path.join(outputDirectory, "output.sv");
-      const genFilePath = path.join(outputDirectory, "output_gen.sv");
+      const outputFilePath = path.join(
+        outputDirectory,
+        path.basename(outputKey)
+      );
+      const genFilePath = path.join(outputDirectory, path.basename(genKey));
 
       fs.writeFileSync(outputFilePath, verilog);
-      fs.writeFileSync(genFilePath, data["out/test_gen.sv"]);
+      fs.writeFileSync(genFilePath, data[genKey]);
 
       vscode.window.showInformationMessage(
         `Generated Verilog code saved to ${outputFilePath} and ${genFilePath}`
       );
     } else {
+      console.error("Output files not found in response:", data); // For debugging
       throw new Error(
-        "SandPiper SaaS compilation failed: No output generated."
+        "SandPiper SaaS compilation failed: Output files not found in response."
       );
     }
   } catch (error) {
@@ -519,68 +536,77 @@ class SandPiperButton implements vscode.StatusBarItem {
   }
 }
 
+async function generateSvgFile(
+  tlvCode: string,
+  inputFilePath: string
+): Promise<string> {
+  const externSettings =
+    vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") ||
+    [];
+  const args = `-i test.tlv --graphTrans --svg ${externSettings.join(
+    " "
+  )} --iArgs`;
 
-async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<string> {
-    const externSettings =
-      vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") || [];
-    const args = `-i test.tlv --graphTrans --svg ${externSettings.join(" ")} --iArgs`;
-  
-    try {
-      const response = await axios.post(
-        "https://faas.makerchip.com/function/sandpiper-faas",
-        JSON.stringify({
-          args,
-          responseType: "json",
-          sv_url_inc: true,
-          files: {
-            "test.tlv": tlvCode,
-          },
-        }),
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-  
-      if (response.status !== 200) {
-        throw new Error(`SandPiper SaaS request failed with status ${response.status}`);
-      }
-  
-      const data = response.data;
-      if (data["out/test.m5out_graph.svg"]) {
-        const outputDirectory = path.dirname(inputFilePath);
-        const svgFilePath = path.join(outputDirectory, "test.m5out_graph.svg");
-        fs.writeFileSync(svgFilePath, data["out/test.m5out_graph.svg"]);
-        return svgFilePath;
-      } else {
-        throw new Error("SandPiper SaaS compilation failed: No SVG output generated.");
-      }
-    } catch (error) {
-      let errorMessage = "SandPiper SaaS compilation failed: ";
-      if (axios.isAxiosError(error)) {
-        errorMessage += error.message;
-      } else {
-        errorMessage += error;
-      }
-      vscode.window.showErrorMessage(errorMessage);
-      throw new Error(errorMessage);
-    }
-  }
-
-  function showSvgInWebview(svgFilePath: string) {
-    const panel = vscode.window.createWebviewPanel(
-      "svgViewer",
-      "TL-Verilog SVG Viewer",
-      vscode.ViewColumn.Two,
+  try {
+    const response = await axios.post(
+      "https://faas.makerchip.com/function/sandpiper-faas",
+      JSON.stringify({
+        args,
+        responseType: "json",
+        sv_url_inc: true,
+        files: {
+          "test.tlv": tlvCode,
+        },
+      }),
       {
-        enableScripts: true,
-        retainContextWhenHidden: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
       }
     );
-  
-    const svg = fs.readFileSync(svgFilePath, "utf8");
-    const webviewContent = `
+
+    if (response.status !== 200) {
+      throw new Error(
+        `SandPiper SaaS request failed with status ${response.status}`
+      );
+    }
+
+    const data = response.data;
+    if (data["out/test.m5out_graph.svg"]) {
+      const outputDirectory = path.dirname(inputFilePath);
+      const svgFilePath = path.join(outputDirectory, "test.m5out_graph.svg");
+      fs.writeFileSync(svgFilePath, data["out/test.m5out_graph.svg"]);
+      return svgFilePath;
+    } else {
+      throw new Error(
+        "SandPiper SaaS compilation failed: No SVG output generated."
+      );
+    }
+  } catch (error) {
+    let errorMessage = "SandPiper SaaS compilation failed: ";
+    if (axios.isAxiosError(error)) {
+      errorMessage += error.message;
+    } else {
+      errorMessage += error;
+    }
+    vscode.window.showErrorMessage(errorMessage);
+    throw new Error(errorMessage);
+  }
+}
+
+function showSvgInWebview(svgFilePath: string) {
+  const panel = vscode.window.createWebviewPanel(
+    "svgViewer",
+    "TL-Verilog SVG Viewer",
+    vscode.ViewColumn.Two,
+    {
+      enableScripts: true,
+      retainContextWhenHidden: true,
+    }
+  );
+
+  const svg = fs.readFileSync(svgFilePath, "utf8");
+  const webviewContent = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -593,102 +619,112 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       </body>
       </html>
     `;
-  
-    panel.webview.html = webviewContent;
+
+  panel.webview.html = webviewContent;
+}
+
+class SvgButton implements vscode.StatusBarItem {
+  private statusBarItem: vscode.StatusBarItem;
+
+  alignment: vscode.StatusBarAlignment;
+  priority: number;
+  text: string;
+  tooltip: string;
+  color: string;
+  command: string | undefined;
+
+  constructor(
+    alignment: vscode.StatusBarAlignment = vscode.StatusBarAlignment.Left,
+    priority: number = 1
+  ) {
+    this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
+    this.statusBarItem.command = "extension.showSvg";
+    this.statusBarItem.text = "$(file-media) SVG";
+    this.statusBarItem.tooltip = "Generate and view TL-Verilog SVG diagram";
+    this.text = "$(file-media) SVG";
+    this.tooltip = "Generate and view TL-Verilog SVG diagram";
+    this.alignment = alignment;
+    this.priority = priority;
   }
 
-  class SvgButton implements vscode.StatusBarItem {
-    private statusBarItem: vscode.StatusBarItem;
-  
-    alignment: vscode.StatusBarAlignment;
-    priority: number;
-    text: string;
-    tooltip: string;
-    color: string;
-    command: string | undefined;
-  
-    constructor(alignment: vscode.StatusBarAlignment = vscode.StatusBarAlignment.Left, priority: number = 1) {
-      this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
-      this.statusBarItem.command = "extension.showSvg";
-      this.statusBarItem.text = "$(file-media) SVG";
-      this.statusBarItem.tooltip = "Generate and view TL-Verilog SVG diagram";
-      this.text = "$(file-media) SVG";
-      this.tooltip = "Generate and view TL-Verilog SVG diagram";
-      this.alignment = alignment;
-      this.priority = priority;
-    }
-  
-    show() {
-      this.statusBarItem.show();
-    }
-  
-    hide() {
-      this.statusBarItem.hide();
-    }
-  
-    dispose() {
-      this.statusBarItem.dispose();
-    }
+  show() {
+    this.statusBarItem.show();
   }
 
-  async function generateNavTlvHtml(tlvCode: string): Promise<string> {
-    const externSettings =
-      vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") || [];
-    const args = `-i test.tlv -o gene.sv --dhtml ${externSettings.join(" ")} --iArgs`;
-  
-    try {
-      const response = await axios.post(
-        "https://faas.makerchip.com/function/sandpiper-faas",
-        JSON.stringify({
-          args,
-          responseType: "json",
-          sv_url_inc: true,
-          files: {
-            "test.tlv": tlvCode,
-          },
-        }),
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-  
-      if (response.status !== 200) {
-        throw new Error(`SandPiper SaaS request failed with status ${response.status}`);
-      }
-  
-      const data = response.data;
-      if (data["out/test.m5out.html"]) {
-        return data["out/test.m5out.html"];
-      } else {
-        throw new Error("SandPiper SaaS compilation failed: No HTML output generated.");
-      }
-    } catch (error) {
-      let errorMessage = "SandPiper SaaS compilation failed: ";
-      if (axios.isAxiosError(error)) {
-        errorMessage += error.message;
-      } else {
-        errorMessage += error;
-      }
-      vscode.window.showErrorMessage(errorMessage);
-      throw new Error(errorMessage);
-    }
+  hide() {
+    this.statusBarItem.hide();
   }
 
-  function showNavTlvInWebview(navTlvHtml: string,) {
-    const panel = vscode.window.createWebviewPanel(
-      "navTlvViewer",
-      "Nav TLV Viewer",
-      vscode.ViewColumn.Two,
+  dispose() {
+    this.statusBarItem.dispose();
+  }
+}
+
+async function generateNavTlvHtml(tlvCode: string): Promise<string> {
+  const externSettings =
+    vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") ||
+    [];
+  const args = `-i test.tlv -o gene.sv --dhtml ${externSettings.join(
+    " "
+  )} --iArgs`;
+
+  try {
+    const response = await axios.post(
+      "https://faas.makerchip.com/function/sandpiper-faas",
+      JSON.stringify({
+        args,
+        responseType: "json",
+        sv_url_inc: true,
+        files: {
+          "test.tlv": tlvCode,
+        },
+      }),
       {
-        enableScripts: true,
-        retainContextWhenHidden: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
       }
     );
-  
-    // Modify the HTML to include necessary styles and scripts for Nav TLV mode
-    const modifiedHtml = `
+
+    if (response.status !== 200) {
+      throw new Error(
+        `SandPiper SaaS request failed with status ${response.status}`
+      );
+    }
+
+    const data = response.data;
+    if (data["out/test.m5out.html"]) {
+      return data["out/test.m5out.html"];
+    } else {
+      throw new Error(
+        "SandPiper SaaS compilation failed: No HTML output generated."
+      );
+    }
+  } catch (error) {
+    let errorMessage = "SandPiper SaaS compilation failed: ";
+    if (axios.isAxiosError(error)) {
+      errorMessage += error.message;
+    } else {
+      errorMessage += error;
+    }
+    vscode.window.showErrorMessage(errorMessage);
+    throw new Error(errorMessage);
+  }
+}
+
+function showNavTlvInWebview(navTlvHtml: string) {
+  const panel = vscode.window.createWebviewPanel(
+    "navTlvViewer",
+    "Nav TLV Viewer",
+    vscode.ViewColumn.Two,
+    {
+      enableScripts: true,
+      retainContextWhenHidden: true,
+    }
+  );
+
+  // Modify the HTML to include necessary styles and scripts for Nav TLV mode
+  const modifiedHtml = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -708,127 +744,145 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       </body>
       </html>
     `;
-  
-    panel.webview.html = modifiedHtml;
+
+  panel.webview.html = modifiedHtml;
+}
+
+class NavTlvButton implements vscode.StatusBarItem {
+  private statusBarItem: vscode.StatusBarItem;
+
+  alignment: vscode.StatusBarAlignment;
+  priority: number;
+  text: string;
+  tooltip: string;
+  color: string;
+  command: string | undefined;
+
+  constructor(
+    alignment: vscode.StatusBarAlignment = vscode.StatusBarAlignment.Left,
+    priority: number = 3
+  ) {
+    this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
+    this.statusBarItem.command = "extension.showNavTlv";
+    this.statusBarItem.text = "$(list-tree) Nav TLV";
+    this.statusBarItem.tooltip = "Open Nav TLV Viewer";
+    this.text = "$(list-tree) Nav TLV";
+    this.tooltip = "Open Nav TLV Viewer";
+    this.alignment = alignment;
+    this.priority = priority;
   }
 
-  
-  class NavTlvButton implements vscode.StatusBarItem {
-    private statusBarItem: vscode.StatusBarItem;
-  
-    alignment: vscode.StatusBarAlignment;
-    priority: number;
-    text: string;
-    tooltip: string;
-    color: string;
-    command: string | undefined;
-  
-    constructor(alignment: vscode.StatusBarAlignment = vscode.StatusBarAlignment.Left, priority: number = 3) {
-      this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
-      this.statusBarItem.command = "extension.showNavTlv";
-      this.statusBarItem.text = "$(list-tree) Nav TLV";
-      this.statusBarItem.tooltip = "Open Nav TLV Viewer";
-      this.text = "$(list-tree) Nav TLV";
-      this.tooltip = "Open Nav TLV Viewer";
-      this.alignment = alignment;
-      this.priority = priority;
-    }
-  
-    show() {
-      this.statusBarItem.show();
-    }
-  
-    hide() {
-      this.statusBarItem.hide();
-    }
-  
-    dispose() {
-      this.statusBarItem.dispose();
-    }
+  show() {
+    this.statusBarItem.show();
   }
 
-  export function deactivate(sandpiperButton: SandPiperButton, svgButton: SvgButton , navTlvButton: NavTlvButton , waveformButton: WaveformButton) {
-    if (sandpiperButton) {
-      sandpiperButton.hide();
-      sandpiperButton.dispose();
-    }
-  
-    if (svgButton) {
-      svgButton.hide();
-      svgButton.dispose();
-    }
-    if (navTlvButton) {
-      navTlvButton.hide();
-      navTlvButton.dispose();
-    }
-    if (waveformButton) {
-      waveformButton.hide();
-      waveformButton.dispose();
-    }
-  
+  hide() {
+    this.statusBarItem.hide();
   }
 
-  class WaveformButton implements vscode.StatusBarItem {
-    private statusBarItem: vscode.StatusBarItem;
-  
-    alignment: vscode.StatusBarAlignment;
-    priority: number;
-    text: string;
-    tooltip: string;
-    color: string;
-    command: string | undefined;
-  
-    constructor(alignment: vscode.StatusBarAlignment = vscode.StatusBarAlignment.Left, priority: number = 2) {
-      this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
-      this.statusBarItem.command = "extension.generateWaveform";
-      this.statusBarItem.text = "$(pulse) Waveform";
-      this.statusBarItem.tooltip = "Generate and view waveform";
-      this.text = "$(pulse) Waveform";
-      this.tooltip = "Generate and view waveform";
-      this.alignment = alignment;
-      this.priority = priority;
-    }
-  
-    show() {
-      this.statusBarItem.show();
-    }
-  
-    hide() {
-      this.statusBarItem.hide();
-    }
-  
-    dispose() {
-      this.statusBarItem.dispose();
-    }
+  dispose() {
+    this.statusBarItem.dispose();
   }
-  const exec = util.promisify(child_process.exec);
+}
 
-  async function generateAndViewWaveform(filePath: string) {
-    const outputDirectory = path.dirname(filePath);
-    const fileName = path.basename(filePath, path.extname(filePath));
-    const vcdFilePath = path.join(outputDirectory, `${fileName}.vcd`);
-    const cppTestbenchPath = path.join(outputDirectory, `${fileName}_tb.cpp`);
-  
-    try {
-       if (!fs.existsSync(cppTestbenchPath)) {
-        await generateCppTestbench(filePath, cppTestbenchPath);
-      }
-      await compileWithVerilator(filePath, cppTestbenchPath, outputDirectory);
-      await runSimulation(fileName, outputDirectory);
+export function deactivate(
+  sandpiperButton: SandPiperButton,
+  svgButton: SvgButton,
+  navTlvButton: NavTlvButton,
+  waveformButton: WaveformButton
+) {
+  if (sandpiperButton) {
+    sandpiperButton.hide();
+    sandpiperButton.dispose();
+  }
 
-      const document = await vscode.workspace.openTextDocument(vcdFilePath);
+  if (svgButton) {
+    svgButton.hide();
+    svgButton.dispose();
+  }
+  if (navTlvButton) {
+    navTlvButton.hide();
+    navTlvButton.dispose();
+  }
+  if (waveformButton) {
+    waveformButton.hide();
+    waveformButton.dispose();
+  }
+}
+
+class WaveformButton implements vscode.StatusBarItem {
+  private statusBarItem: vscode.StatusBarItem;
+
+  alignment: vscode.StatusBarAlignment;
+  priority: number;
+  text: string;
+  tooltip: string;
+  color: string;
+  command: string | undefined;
+
+  constructor(
+    alignment: vscode.StatusBarAlignment = vscode.StatusBarAlignment.Left,
+    priority: number = 2
+  ) {
+    this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
+    this.statusBarItem.command = "extension.generateWaveform";
+    this.statusBarItem.text = "$(pulse) Waveform";
+    this.statusBarItem.tooltip = "Generate and view waveform";
+    this.text = "$(pulse) Waveform";
+    this.tooltip = "Generate and view waveform";
+    this.alignment = alignment;
+    this.priority = priority;
+  }
+
+  show() {
+    this.statusBarItem.show();
+  }
+
+  hide() {
+    this.statusBarItem.hide();
+  }
+
+  dispose() {
+    this.statusBarItem.dispose();
+  }
+}
+const exec = util.promisify(child_process.exec);
+
+async function generateAndViewWaveform(filePath: string) {
+  const outputDirectory = path.dirname(filePath);
+  const fileName = path.basename(filePath, path.extname(filePath));
+  const vcdFilePath = path.join(outputDirectory, `${fileName}.vcd`);
+  const cppTestbenchPath = path.join(outputDirectory, `${fileName}_tb.cpp`);
+
+  try {
+    if (!fs.existsSync(cppTestbenchPath)) {
+      await generateCppTestbench(filePath, cppTestbenchPath);
+    }
+    await compileWithVerilator(filePath, cppTestbenchPath, outputDirectory);
+    await runSimulation(fileName, outputDirectory);
+
+    const document = await vscode.workspace.openTextDocument(vcdFilePath);
     await vscode.window.showTextDocument(document, vscode.ViewColumn.Two);
 
-    vscode.window.showInformationMessage(`Waveform generated at ${vcdFilePath}`);
-  
-    } catch (error) {
-      vscode.window.showErrorMessage(`Failed to generate waveform: ${error.message}`);
-    }
+    vscode.window.showInformationMessage(
+      `Waveform generated at ${vcdFilePath}`
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `Failed to generate waveform: ${error.message}`
+    );
   }
-  
-  async function generateCppTestbench(verilogFilePath: string, cppTestbenchPath: string) {
-    const moduleName = path.basename(verilogFilePath, path.extname(verilogFilePath));
-    const testbenchContent = `
+}
+
+async function generateCppTestbench(
+  verilogFilePath: string,
+  cppTestbenchPath: string
+) {
+  const moduleName = path.basename(
+    verilogFilePath,
+    path.extname(verilogFilePath)
+  );
+  const testbenchContent = `
   #include "V${moduleName}.h"
   #include "verilated.h"
   #include "verilated_vcd_c.h"
@@ -853,26 +907,34 @@ async function generateSvgFile(tlvCode: string, inputFilePath: string): Promise<
       return 0;
   }
   `;
-  
-    fs.writeFileSync(cppTestbenchPath, testbenchContent);
-    vscode.window.showInformationMessage(`Generated C++ testbench at ${cppTestbenchPath}`);
-  }
 
-  async function compileWithVerilator(verilogFilePath: string, cppTestbenchPath: string, outputDirectory: string) {
-    const moduleName = path.basename(verilogFilePath, path.extname(verilogFilePath));
-    const command = `verilator -Wall --trace -cc ${verilogFilePath} --exe ${cppTestbenchPath} -o ${moduleName}_sim`;
-  
-    try {
-      const { stdout, stderr } = await exec(command, { cwd: outputDirectory });
-      if (stderr) {
-        throw new Error(stderr);
-      }
-      vscode.window.showInformationMessage('Verilator compilation successful');
-    } catch (error) {
-      throw new Error(`Verilator compilation failed: ${error.message}`);
+  fs.writeFileSync(cppTestbenchPath, testbenchContent);
+  vscode.window.showInformationMessage(
+    `Generated C++ testbench at ${cppTestbenchPath}`
+  );
+}
+
+async function compileWithVerilator(
+  verilogFilePath: string,
+  cppTestbenchPath: string,
+  outputDirectory: string
+) {
+  const moduleName = path.basename(
+    verilogFilePath,
+    path.extname(verilogFilePath)
+  );
+  const command = `verilator -Wall --trace -cc ${verilogFilePath} --exe ${cppTestbenchPath} -o ${moduleName}_sim`;
+
+  try {
+    const { stdout, stderr } = await exec(command, { cwd: outputDirectory });
+    if (stderr) {
+      throw new Error(stderr);
     }
+    vscode.window.showInformationMessage("Verilator compilation successful");
+  } catch (error) {
+    throw new Error(`Verilator compilation failed: ${error.message}`);
   }
-
+}
 
 async function runSimulation(moduleName: string, outputDirectory: string) {
   const command = `make -C obj_dir -f V${moduleName}.mk V${moduleName} && ./obj_dir/V${moduleName}`;
@@ -882,7 +944,7 @@ async function runSimulation(moduleName: string, outputDirectory: string) {
     if (stderr) {
       throw new Error(stderr);
     }
-    vscode.window.showInformationMessage('Simulation completed successfully');
+    vscode.window.showInformationMessage("Simulation completed successfully");
   } catch (error) {
     throw new Error(`Simulation failed: ${error.message}`);
   }
