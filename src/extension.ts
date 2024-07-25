@@ -84,8 +84,9 @@ export function activate(context: vscode.ExtensionContext) {
         const document = editor.document;
         if (document.languageId === "tlverilog") {
           const tlvCode = document.getText();
+          const inputFilePath = document.fileName;
           try {
-            const navTlvHtml = await generateNavTlvHtml(tlvCode);
+            const navTlvHtml = await generateNavTlvHtml(tlvCode,inputFilePath);
             showNavTlvInWebview(navTlvHtml);
           } catch (error) {
             vscode.window.showErrorMessage(
@@ -540,10 +541,11 @@ async function generateSvgFile(
   tlvCode: string,
   inputFilePath: string
 ): Promise<string> {
+    const filename = path.basename(inputFilePath);
   const externSettings =
     vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") ||
     [];
-  const args = `-i test.tlv --graphTrans --svg ${externSettings.join(
+  const args = `-i ${filename} --graphTrans --svg ${externSettings.join(
     " "
   )} --iArgs`;
 
@@ -555,7 +557,7 @@ async function generateSvgFile(
         responseType: "json",
         sv_url_inc: true,
         files: {
-          "test.tlv": tlvCode,
+          [filename] : tlvCode,
         },
       }),
       {
@@ -572,10 +574,12 @@ async function generateSvgFile(
     }
 
     const data = response.data;
-    if (data["out/test.m5out_graph.svg"]) {
+    const svgOutputKey = `out/${filename.replace('.tlv', '.m5out_graph.svg')}`;
+    if (data[svgOutputKey]) {
+      const svgContent = data[svgOutputKey];
       const outputDirectory = path.dirname(inputFilePath);
-      const svgFilePath = path.join(outputDirectory, "test.m5out_graph.svg");
-      fs.writeFileSync(svgFilePath, data["out/test.m5out_graph.svg"]);
+      const svgFilePath = path.join(outputDirectory,`${path.basename(filename, '.tlv')}_diagram.svg`)
+      fs.writeFileSync(svgFilePath, svgContent);
       return svgFilePath;
     } else {
       throw new Error(
@@ -660,11 +664,12 @@ class SvgButton implements vscode.StatusBarItem {
   }
 }
 
-async function generateNavTlvHtml(tlvCode: string): Promise<string> {
+async function generateNavTlvHtml(tlvCode: string, inputFilePath:string): Promise<string> {
   const externSettings =
     vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") ||
     [];
-  const args = `-i test.tlv -o gene.sv --dhtml ${externSettings.join(
+    const filename = path.basename(inputFilePath);
+  const args = `-i ${filename} -o gene.sv --dhtml ${externSettings.join(
     " "
   )} --iArgs`;
 
@@ -676,7 +681,7 @@ async function generateNavTlvHtml(tlvCode: string): Promise<string> {
         responseType: "json",
         sv_url_inc: true,
         files: {
-          "test.tlv": tlvCode,
+          [filename]: tlvCode,
         },
       }),
       {
@@ -693,8 +698,15 @@ async function generateNavTlvHtml(tlvCode: string): Promise<string> {
     }
 
     const data = response.data;
-    if (data["out/test.m5out.html"]) {
-      return data["out/test.m5out.html"];
+    console.log(data)
+    const outputKey = Object.keys(data).find(
+        (key) => key.startsWith("out/") && key.endsWith(".html")
+      );
+
+    const htmlOutputKey = `out/${filename.replace('.tlv', '.m4out.html')}`;
+    if (outputKey) {
+        const htmlContent = data[outputKey];
+        return htmlContent;
     } else {
       throw new Error(
         "SandPiper SaaS compilation failed: No HTML output generated."
@@ -723,7 +735,6 @@ function showNavTlvInWebview(navTlvHtml: string) {
     }
   );
 
-  // Modify the HTML to include necessary styles and scripts for Nav TLV mode
   const modifiedHtml = `
       <!DOCTYPE html>
       <html lang="en">
