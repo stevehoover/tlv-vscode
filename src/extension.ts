@@ -825,25 +825,35 @@ function showNavTlvInWebview(navTlvHtml: string) {
   );
 
   const modifiedHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nav TLV Viewer</title>
-        <style>
-          body { font-family: Arial, sans-serif; }
-          .nav-tlv-content { white-space: pre; font-family: monospace; }
-        </style>
-      </head>
-      <body>
-        <div class="nav-tlv-content">${navTlvHtml}</div>
-        <script>
-          
-        </script>
-      </body>
-      </html>
+          <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Nav TLV Viewer</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    background-color: white;
+                    margin: 0;
+                    padding: 20px;
+                }
+                .nav-tlv-content { 
+                    white-space: pre; 
+                    font-family: monospace; 
+                    background-color: white;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="nav-tlv-content">${navTlvHtml}</div>
+            <script>
+                // You can add any necessary JavaScript here
+            </script>
+        </body>
+        </html>
     `;
+
 
   panel.webview.html = modifiedHtml;
 }
