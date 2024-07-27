@@ -425,6 +425,7 @@ async function compileTLVerilogWithSandPiper(
   const args = `-i ${filename} -o ${filename.replace(
     ".tlv",
     ".sv"
+    //@ts-ignore
   )} --m4out out/m4out ${externSettings.join(" ")} --iArgs`;
 
   try {
@@ -499,7 +500,7 @@ async function compileTLVerilogWithSandPiper(
     throw new Error(errorMessage);
   }
 }
-
+    //@ts-ignore
 class SandPiperButton implements vscode.StatusBarItem {
   private statusBarItem: vscode.StatusBarItem;
 
@@ -545,6 +546,7 @@ async function generateSvgFile(
   const externSettings =
     vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") ||
     [];
+        //@ts-ignore
   const args = `-i ${filename} --graphTrans --svg ${externSettings.join(
     " "
   )} --iArgs`;
@@ -611,22 +613,108 @@ function showSvgInWebview(svgFilePath: string) {
 
   const svg = fs.readFileSync(svgFilePath, "utf8");
   const webviewContent = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
+       <!DOCTYPE html>
+    <html lang="en">
+    <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TL-Verilog SVG Viewer</title>
-      </head>
-      <body>
-        ${svg}
-      </body>
-      </html>
-    `;
+        <title>Sandpiper Diagram Viewer</title>
+        <style>
+            body { 
+                margin: 0; 
+                padding: 0;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                background-color: #f0f0f0;
+            }
+            .controls-container {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                z-index: 1000;
+            }
+            .zoom-controls {
+                display: flex;
+                flex-direction: column;
+                background-color: white;
+                border-radius: 4px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            .zoom-button {
+                padding: 5px 10px;
+                font-size: 18px;
+                cursor: pointer;
+                border: none;
+                background-color: transparent;
+            }
+            .zoom-button:hover {
+                background-color: #f0f0f0;
+            }
+            .zoom-reset {
+                border-top: 1px solid #ccc;
+                font-size: 14px;
+            }
+            .svg-container {
+                flex: 1;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                overflow: hidden;
+            }
+            svg { 
+                max-width: 100%; 
+                max-height: 100%; 
+                border: 1px solid #ccc; 
+                background-color: white;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="controls-container">
+            <div class="zoom-controls">
+                <button class="zoom-button" onclick="zoomIn()">+</button>
+                <button class="zoom-button" onclick="zoomOut()">-</button>
+                <button class="zoom-button zoom-reset" onclick="resetZoom()">RESET</button>
+            </div>
+        </div>
+        <div class="svg-container" id="svg-container">
+            ${svg}
+        </div>
+    
+        <script>
+        //@ts-nocheck
+        let currentZoom = 1;
+        const svgContainer = document.getElementById('svg-container');
+        const svg = svgContainer.querySelector('svg');
+    
+        function zoomIn() {
+            currentZoom *= 1.2;
+            updateZoom();
+        }
+    
+        function zoomOut() {
+            currentZoom /= 1.2;
+            updateZoom();
+        }
+    
+        function resetZoom() {
+            currentZoom = 1;
+            updateZoom();
+        }
+    
+        function updateZoom() {
+            svg.style.transform = \`scale(\${currentZoom})\`;
+        }
+        </script>
+    </body>
+    </html>
+    ` as const;
 
   panel.webview.html = webviewContent;
 }
 
+//@ts-ignore
 class SvgButton implements vscode.StatusBarItem {
   private statusBarItem: vscode.StatusBarItem;
 
@@ -669,6 +757,7 @@ async function generateNavTlvHtml(tlvCode: string, inputFilePath:string): Promis
     vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") ||
     [];
     const filename = path.basename(inputFilePath);
+        //@ts-ignore
   const args = `-i ${filename} -o gene.sv --dhtml ${externSettings.join(
     " "
   )} --iArgs`;
@@ -759,6 +848,7 @@ function showNavTlvInWebview(navTlvHtml: string) {
   panel.webview.html = modifiedHtml;
 }
 
+    //@ts-ignore
 class NavTlvButton implements vscode.StatusBarItem {
   private statusBarItem: vscode.StatusBarItem;
 
@@ -821,6 +911,7 @@ export function deactivate(
   }
 }
 
+// @ts-ignore
 class WaveformButton implements vscode.StatusBarItem {
   private statusBarItem: vscode.StatusBarItem;
 
@@ -857,20 +948,18 @@ class WaveformButton implements vscode.StatusBarItem {
     this.statusBarItem.dispose();
   }
 }
+
 const exec = util.promisify(child_process.exec);
 
 async function generateAndViewWaveform(filePath: string) {
   const outputDirectory = path.dirname(filePath);
   const fileName = path.basename(filePath, path.extname(filePath));
   const vcdFilePath = path.join(outputDirectory, `${fileName}.vcd`);
-  const cppTestbenchPath = path.join(outputDirectory, `${fileName}_tb.cpp`);
 
   try {
-    if (!fs.existsSync(cppTestbenchPath)) {
-      await generateCppTestbench(filePath, cppTestbenchPath);
-    }
-    await compileWithVerilator(filePath, cppTestbenchPath, outputDirectory);
-    await runSimulation(fileName, outputDirectory);
+    await setupSimulationFiles(outputDirectory);
+    await compileWithVerilator(filePath, outputDirectory);
+    await runSimulation(outputDirectory);
 
     const document = await vscode.workspace.openTextDocument(vcdFilePath);
     await vscode.window.showTextDocument(document, vscode.ViewColumn.Two);
@@ -885,56 +974,84 @@ async function generateAndViewWaveform(filePath: string) {
   }
 }
 
-async function generateCppTestbench(
-  verilogFilePath: string,
-  cppTestbenchPath: string
-) {
-  const moduleName = path.basename(
-    verilogFilePath,
-    path.extname(verilogFilePath)
-  );
-  const testbenchContent = `
-  #include "V${moduleName}.h"
-  #include "verilated.h"
-  #include "verilated_vcd_c.h"
-  
-  int main(int argc, char** argv) {
-      Verilated::commandArgs(argc, argv);
-      V${moduleName}* top = new V${moduleName};
-  
-      Verilated::traceEverOn(true);
-      VerilatedVcdC* tfp = new VerilatedVcdC;
-      top->trace(tfp, 99);
-      tfp->open("${moduleName}.vcd");
-  
-      // Simulate for 100 time units
-      for (int i = 0; i < 100; i++) {
-          top->eval();
-          tfp->dump(i);
-      }
-  
-      tfp->close();
-      delete top;
-      return 0;
-  }
+async function setupSimulationFiles(outputDirectory: string) {
+  const makerchipSvContent = `
+\`include "sp_default.vh" //_\\SV
+module makerchip(input logic clk, input logic reset_async, output logic passed, output logic failed);
+logic reset;
+logic [31:0] cyc_cnt;
+always_ff @(posedge clk) begin
+   reset <= reset_async;
+   cyc_cnt <= reset ? 32'b1 : cyc_cnt + 32'b1;
+end
+top top(.*);
+endmodule
   `;
 
-  fs.writeFileSync(cppTestbenchPath, testbenchContent);
-  vscode.window.showInformationMessage(
-    `Generated C++ testbench at ${cppTestbenchPath}`
-  );
+  const simMainCppContent = `
+#include <verilated.h>
+#include <string.h>
+#include "Vmakerchip.h"
+#if VM_TRACE
+# include <verilated_vcd_c.h>
+#endif
+Vmakerchip *makerchip;
+vluint64_t sim_time = 0;
+double sc_time_stamp () {
+    return (double)sim_time;
+}
+int main(int argc, char **argv, char **env) {
+    makerchip = new Vmakerchip;
+    Verilated::commandArgs(argc, argv);
+    Verilated::debug(0);
+#if VM_TRACE
+    Verilated::traceEverOn(true);
+    VerilatedVcdC* tfp = new VerilatedVcdC;
+    makerchip->trace (tfp, 99);
+    tfp->open ("vlt_dump.vcd");
+#endif
+    int RESET_DURATION = 4;
+    makerchip->clk = 0;
+    makerchip->reset_async = 1;
+    makerchip->passed = 0;
+    makerchip->failed = 0;
+    while (sim_time < 400000 &&
+           (makerchip->clk ? !makerchip->passed && !makerchip->failed
+                           : sim_time < 1200 || (makerchip->passed && makerchip->failed)
+           ) && !Verilated::gotFinish()) {
+        makerchip->clk = !makerchip->clk;
+        if (!makerchip->clk) {
+          if (sim_time >= RESET_DURATION * 2) {
+            makerchip->reset_async = 0;
+          }
+        }
+        makerchip->eval();
+#if VM_TRACE
+        if (tfp) tfp->dump(sim_time);
+#endif
+        sim_time++;
+    }
+    makerchip->final();
+#if VM_TRACE
+    if (tfp) tfp->close();
+#endif
+    if (makerchip->failed) {
+        printf("Simulation FAILED!!!\\n");
+    } else if (makerchip->passed) {
+        printf("Simulation PASSED!!!\\n");
+    } else {
+        printf("Simulation reached max cycles.\\n");
+    }
+    exit(0L);
+}
+  `;
+
+  fs.writeFileSync(path.join(outputDirectory, 'makerchip.sv'), makerchipSvContent);
+  fs.writeFileSync(path.join(outputDirectory, 'sim_main.cpp'), simMainCppContent);
 }
 
-async function compileWithVerilator(
-  verilogFilePath: string,
-  cppTestbenchPath: string,
-  outputDirectory: string
-) {
-  const moduleName = path.basename(
-    verilogFilePath,
-    path.extname(verilogFilePath)
-  );
-  const command = `verilator -Wall --trace -cc ${verilogFilePath} --exe ${cppTestbenchPath} -o ${moduleName}_sim`;
+async function compileWithVerilator(verilogFilePath: string, outputDirectory: string) {
+  const command = `verilator -Wall --trace -cc ${verilogFilePath} makerchip.sv --exe sim_main.cpp --top-module makerchip -o Vmakerchip`;
 
   try {
     const { stdout, stderr } = await exec(command, { cwd: outputDirectory });
@@ -947,8 +1064,8 @@ async function compileWithVerilator(
   }
 }
 
-async function runSimulation(moduleName: string, outputDirectory: string) {
-  const command = `make -C obj_dir -f V${moduleName}.mk V${moduleName} && ./obj_dir/V${moduleName}`;
+async function runSimulation(outputDirectory: string) {
+  const command = `make -C obj_dir -f Vmakerchip.mk Vmakerchip && ./obj_dir/Vmakerchip`;
 
   try {
     const { stdout, stderr } = await exec(command, { cwd: outputDirectory });
