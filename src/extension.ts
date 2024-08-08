@@ -10,6 +10,7 @@ import * as util from "util";
 // This method is called when your extension is activated. Activation is
 // controlled by the activation events defined in package.json.
 export function activate(context: vscode.ExtensionContext) {
+  const editor = vscode.window.activeTextEditor;
   const sandpiperButton = new SandPiperButton();
   sandpiperButton.show();
   const svgButton = new SvgButton();
@@ -18,7 +19,6 @@ export function activate(context: vscode.ExtensionContext) {
   navTlvButton.show();
   const waveformButton = new WaveformButton();
   waveformButton.show();
-
   const conversionCommand = vscode.commands.registerCommand(
     "extension.sandpiperSaas",
     async () => {
@@ -86,7 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
           const tlvCode = document.getText();
           const inputFilePath = document.fileName;
           try {
-            const navTlvHtml = await generateNavTlvHtml(tlvCode,inputFilePath);
+            const navTlvHtml = await generateNavTlvHtml(tlvCode, inputFilePath);
             showNavTlvInWebview(navTlvHtml);
           } catch (error) {
             vscode.window.showErrorMessage(
@@ -500,9 +500,10 @@ async function compileTLVerilogWithSandPiper(
     throw new Error(errorMessage);
   }
 }
-    //@ts-ignore
+//@ts-ignore
 class SandPiperButton implements vscode.StatusBarItem {
   private statusBarItem: vscode.StatusBarItem;
+  private activeEditor: vscode.TextEditor | undefined;
 
   alignment: vscode.StatusBarAlignment;
   priority: number;
@@ -523,6 +524,11 @@ class SandPiperButton implements vscode.StatusBarItem {
     this.tooltip = "Compile TL-Verilog using SandPiper SaaS";
     this.alignment = alignment;
     this.priority = priority;
+    this.activeEditor = vscode.window.activeTextEditor;
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      this.activeEditor = editor;
+      this.updateVisibility();
+    });
   }
 
   show() {
@@ -536,17 +542,24 @@ class SandPiperButton implements vscode.StatusBarItem {
   dispose() {
     this.statusBarItem.dispose();
   }
+  private updateVisibility() {
+    if (this.activeEditor && this.activeEditor.document.languageId === "tlverilog") {
+      this.show();
+    } else {
+      this.hide();
+    }
+  }
 }
 
 async function generateSvgFile(
   tlvCode: string,
   inputFilePath: string
 ): Promise<string> {
-    const filename = path.basename(inputFilePath);
+  const filename = path.basename(inputFilePath);
   const externSettings =
     vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") ||
     [];
-        //@ts-ignore
+  //@ts-ignore
   const args = `-i ${filename} --graphTrans --svg ${externSettings.join(
     " "
   )} --iArgs`;
@@ -559,7 +572,7 @@ async function generateSvgFile(
         responseType: "json",
         sv_url_inc: true,
         files: {
-          [filename] : tlvCode,
+          [filename]: tlvCode,
         },
       }),
       {
@@ -576,11 +589,14 @@ async function generateSvgFile(
     }
 
     const data = response.data;
-    const svgOutputKey = `out/${filename.replace('.tlv', '.m5out_graph.svg')}`;
+    const svgOutputKey = `out/${filename.replace(".tlv", ".m5out_graph.svg")}`;
     if (data[svgOutputKey]) {
       const svgContent = data[svgOutputKey];
       const outputDirectory = path.dirname(inputFilePath);
-      const svgFilePath = path.join(outputDirectory,`${path.basename(filename, '.tlv')}_diagram.svg`)
+      const svgFilePath = path.join(
+        outputDirectory,
+        `${path.basename(filename, ".tlv")}_diagram.svg`
+      );
       fs.writeFileSync(svgFilePath, svgContent);
       return svgFilePath;
     } else {
@@ -752,12 +768,15 @@ class SvgButton implements vscode.StatusBarItem {
   }
 }
 
-async function generateNavTlvHtml(tlvCode: string, inputFilePath:string): Promise<string> {
+async function generateNavTlvHtml(
+  tlvCode: string,
+  inputFilePath: string
+): Promise<string> {
   const externSettings =
     vscode.workspace.getConfiguration("tlverilog").get("formattingSettings") ||
     [];
-    const filename = path.basename(inputFilePath);
-        //@ts-ignore
+  const filename = path.basename(inputFilePath);
+  //@ts-ignore
   const args = `-i ${filename} -o gene.sv --dhtml ${externSettings.join(
     " "
   )} --iArgs`;
@@ -787,15 +806,15 @@ async function generateNavTlvHtml(tlvCode: string, inputFilePath:string): Promis
     }
 
     const data = response.data;
-    console.log(data)
+    console.log(data);
     const outputKey = Object.keys(data).find(
-        (key) => key.startsWith("out/") && key.endsWith(".html")
-      );
+      (key) => key.startsWith("out/") && key.endsWith(".html")
+    );
 
-    const htmlOutputKey = `out/${filename.replace('.tlv', '.m4out.html')}`;
+    const htmlOutputKey = `out/${filename.replace(".tlv", ".m4out.html")}`;
     if (outputKey) {
-        const htmlContent = data[outputKey];
-        return htmlContent;
+      const htmlContent = data[outputKey];
+      return htmlContent;
     } else {
       throw new Error(
         "SandPiper SaaS compilation failed: No HTML output generated."
@@ -854,11 +873,10 @@ function showNavTlvInWebview(navTlvHtml: string) {
         </html>
     `;
 
-
   panel.webview.html = modifiedHtml;
 }
 
-    //@ts-ignore
+//@ts-ignore
 class NavTlvButton implements vscode.StatusBarItem {
   private statusBarItem: vscode.StatusBarItem;
 
@@ -1008,7 +1026,7 @@ endmodule
 Vmakerchip *makerchip;
 vluint64_t sim_time = 0;
 double sc_time_stamp () {
-    return (double)sim_time;
+    return (double)sim_time;Verilator compilation failed: Command failed: verilator -Wall --trace -cc /home/aryann15/verilog/test1111111.sv makerchip.sv --exe sim_main.cpp --top-module makerchip -o Vmakerchip Can't exec "/usr/local/share/verilator/verilator_bin": No such file or directory at /usr/local/bin/verilator line 189. %Error: verilator: Misinstalled, or VERILATOR_ROOT might need to be in environment %Error: Verilator threw signal -1. Suggest trying --debug --gdbbt %Error: Command Failed /usr/local/share/verilator/verilator_bin -
 }
 int main(int argc, char **argv, char **env) {
     makerchip = new Vmakerchip;
@@ -1056,11 +1074,20 @@ int main(int argc, char **argv, char **env) {
 }
   `;
 
-  fs.writeFileSync(path.join(outputDirectory, 'makerchip.sv'), makerchipSvContent);
-  fs.writeFileSync(path.join(outputDirectory, 'sim_main.cpp'), simMainCppContent);
+  fs.writeFileSync(
+    path.join(outputDirectory, "makerchip.sv"),
+    makerchipSvContent
+  );
+  fs.writeFileSync(
+    path.join(outputDirectory, "sim_main.cpp"),
+    simMainCppContent
+  );
 }
 
-async function compileWithVerilator(verilogFilePath: string, outputDirectory: string) {
+async function compileWithVerilator(
+  verilogFilePath: string,
+  outputDirectory: string
+) {
   const command = `verilator -Wall --trace -cc ${verilogFilePath} makerchip.sv --exe sim_main.cpp --top-module makerchip -o Vmakerchip`;
 
   try {
