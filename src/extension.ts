@@ -733,6 +733,7 @@ function showSvgInWebview(svgFilePath: string) {
 //@ts-ignore
 class SvgButton implements vscode.StatusBarItem {
   private statusBarItem: vscode.StatusBarItem;
+  private activeEditor: vscode.TextEditor | undefined;
 
   alignment: vscode.StatusBarAlignment;
   priority: number;
@@ -753,6 +754,11 @@ class SvgButton implements vscode.StatusBarItem {
     this.tooltip = "Generate and view TL-Verilog SVG diagram";
     this.alignment = alignment;
     this.priority = priority;
+    this.activeEditor = vscode.window.activeTextEditor;
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      this.activeEditor = editor;
+      this.updateVisibility();
+    });
   }
 
   show() {
@@ -765,6 +771,13 @@ class SvgButton implements vscode.StatusBarItem {
 
   dispose() {
     this.statusBarItem.dispose();
+  }
+  private updateVisibility() {
+    if (this.activeEditor && this.activeEditor.document.languageId === "tlverilog") {
+      this.show();
+    } else {
+      this.hide();
+    }
   }
 }
 
@@ -879,6 +892,7 @@ function showNavTlvInWebview(navTlvHtml: string) {
 //@ts-ignore
 class NavTlvButton implements vscode.StatusBarItem {
   private statusBarItem: vscode.StatusBarItem;
+  private activeEditor: vscode.TextEditor | undefined;
 
   alignment: vscode.StatusBarAlignment;
   priority: number;
@@ -899,6 +913,11 @@ class NavTlvButton implements vscode.StatusBarItem {
     this.tooltip = "Open Nav TLV Viewer";
     this.alignment = alignment;
     this.priority = priority;
+    this.activeEditor = vscode.window.activeTextEditor;
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      this.activeEditor = editor;
+      this.updateVisibility();
+    });
   }
 
   show() {
@@ -911,6 +930,13 @@ class NavTlvButton implements vscode.StatusBarItem {
 
   dispose() {
     this.statusBarItem.dispose();
+  }
+  private updateVisibility() {
+    if (this.activeEditor && this.activeEditor.document.languageId === "tlverilog") {
+      this.show();
+    } else {
+      this.hide();
+    }
   }
 }
 
