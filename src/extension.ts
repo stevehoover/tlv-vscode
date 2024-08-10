@@ -106,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(showNavTlvCommand);
 
   const generateWaveformCommand = vscode.commands.registerCommand(
-    "extension.generateWaveform",
+    "extension.runVerilator",
     async () => {
       const editor = vscode.window.activeTextEditor;
       if (editor) {
@@ -116,7 +116,7 @@ export function activate(context: vscode.ExtensionContext) {
           document.languageId === "verilog"
         ) {
           try {
-            await generateAndViewWaveform(document.fileName);
+            await generateAndViewWaveform(document.uri.fsPath);
           } catch (error) {
             vscode.window.showErrorMessage(
               `Failed to generate waveform: ${error.message}`
@@ -981,7 +981,7 @@ class WaveformButton implements vscode.StatusBarItem {
     priority: number = 2
   ) {
     this.statusBarItem = vscode.window.createStatusBarItem(alignment, priority);
-    this.statusBarItem.command = "extension.generateWaveform";
+    this.statusBarItem.command = "extension.runVerilator";
     this.statusBarItem.text = "$(pulse) Waveform";
     this.statusBarItem.tooltip = "Generate and view waveform";
     this.text = "$(pulse) Waveform";
@@ -1039,8 +1039,7 @@ always_ff @(posedge clk) begin
    cyc_cnt <= reset ? 32'b1 : cyc_cnt + 32'b1;
 end
 top top(.*);
-endmodule
-  `;
+endmodule`;
 
   const simMainCppContent = `
 #include <verilated.h>
@@ -1052,8 +1051,8 @@ endmodule
 Vmakerchip *makerchip;
 vluint64_t sim_time = 0;
 double sc_time_stamp () {
-    return (double)sim_time;Verilator compilation failed: Command failed: verilator -Wall --trace -cc /home/aryann15/verilog/test1111111.sv makerchip.sv --exe sim_main.cpp --top-module makerchip -o Vmakerchip Can't exec "/usr/local/share/verilator/verilator_bin": No such file or directory at /usr/local/bin/verilator line 189. %Error: verilator: Misinstalled, or VERILATOR_ROOT might need to be in environment %Error: Verilator threw signal -1. Suggest trying --debug --gdbbt %Error: Command Failed /usr/local/share/verilator/verilator_bin -
-}
+    return (double)sim_time;
+    }
 int main(int argc, char **argv, char **env) {
     makerchip = new Vmakerchip;
     Verilated::commandArgs(argc, argv);
