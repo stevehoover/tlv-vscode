@@ -1030,7 +1030,6 @@ async function generateAndViewWaveform(filePath: string) {
 
 async function setupSimulationFiles(outputDirectory: string) {
   const makerchipSvContent = `
-\`include "sp_default.vh" //_\\SV
 module makerchip(input logic clk, input logic reset_async, output logic passed, output logic failed);
 logic reset;
 logic [31:0] cyc_cnt;
@@ -1039,7 +1038,8 @@ always_ff @(posedge clk) begin
    cyc_cnt <= reset ? 32'b1 : cyc_cnt + 32'b1;
 end
 top top(.*);
-endmodule`;
+endmodule
+`;
 
   const simMainCppContent = `
 #include <verilated.h>
@@ -1098,6 +1098,21 @@ int main(int argc, char **argv, char **env) {
     exit(0L);
 }
   `;
+  const pseudoRandContent = `
+module pseudo_rand #(parameter WIDTH=257) (
+  input wire clk,
+  input wire reset,
+  output reg [WIDTH-1:0] rand_out
+);
+  always @(posedge clk or posedge reset) begin
+    if (reset)
+      rand_out <= {WIDTH{1'b0}};
+    else
+      rand_out <= {rand_out[WIDTH-2:0], rand_out[WIDTH-1] ^ rand_out[WIDTH-2]};
+  end
+endmodule
+`;
+
 
   fs.writeFileSync(
     path.join(outputDirectory, "makerchip.sv"),
@@ -1107,13 +1122,17 @@ int main(int argc, char **argv, char **env) {
     path.join(outputDirectory, "sim_main.cpp"),
     simMainCppContent
   );
+  fs.writeFileSync(
+    path.join(outputDirectory, "pseudo_rand.sv"),
+    pseudoRandContent
+  );
 }
 
 async function compileWithVerilator(
   verilogFilePath: string,
   outputDirectory: string
 ) {
-  const command = `verilator -Wall --trace -cc ${verilogFilePath} makerchip.sv --exe sim_main.cpp --top-module makerchip -o Vmakerchip`;
+  const command = `verilator -Wall --trace -cc ${path.basename(verilogFilePath)} makerchip.sv --exe sim_main.cpp --top-module makerchip -I. -Wno-DECLFILENAME`;
 
   try {
     const { stdout, stderr } = await exec(command, { cwd: outputDirectory });
