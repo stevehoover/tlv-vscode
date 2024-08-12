@@ -1015,16 +1015,28 @@ async function generateAndViewWaveform(filePath: string) {
     await compileWithVerilator(filePath, outputDirectory);
     await runSimulation(outputDirectory);
 
-    const document = await vscode.workspace.openTextDocument(vcdFilePath);
-    await vscode.window.showTextDocument(document, vscode.ViewColumn.Two);
+    // const document = await vscode.workspace.openTextDocument(vcdFilePath);
+    // await vscode.window.showTextDocument(document, vscode.ViewColumn.Two);
+
+    await launchGTKWave(vcdFilePath);
 
     vscode.window.showInformationMessage(
-      `Waveform generated at ${vcdFilePath}`
+      `Waveform opened in GTKWave: ${vcdFilePath}`
     );
   } catch (error) {
     vscode.window.showErrorMessage(
       `Failed to generate waveform: ${error.message}`
     );
+  }
+}
+
+async function launchGTKWave(vcdFilePath: string) {
+  const command = `gtkwave "${vcdFilePath}"`;
+  
+  try {
+    await exec(command);
+  } catch (error) {
+    throw new Error(`Failed to launch GTKWave: ${error.message}`);
   }
 }
 
