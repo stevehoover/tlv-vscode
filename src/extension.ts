@@ -1008,7 +1008,7 @@ const exec = util.promisify(child_process.exec);
 async function generateAndViewWaveform(filePath: string) {
   const outputDirectory = path.dirname(filePath);
   const fileName = path.basename(filePath, path.extname(filePath));
-  const vcdFilePath = path.join(outputDirectory, `${fileName}.vcd`);
+  const vcdFilePath = path.join(outputDirectory, `vlt_dump.vcd`);
 
   try {
     await setupSimulationFiles(outputDirectory);
@@ -1132,7 +1132,7 @@ async function compileWithVerilator(
   verilogFilePath: string,
   outputDirectory: string
 ) {
-  const command = `verilator -Wall --trace -cc ${path.basename(verilogFilePath)} makerchip.sv --exe sim_main.cpp --top-module makerchip -I. -Wno-DECLFILENAME`;
+  const command = `verilator -Wall --trace -cc ${path.basename(verilogFilePath)} pseudo_rand.sv makerchip.sv --exe sim_main.cpp --top-module makerchip -I. -Wno-DECLFILENAME -Wno-UNUSEDSIGNAL -Wno-SYNCASYNCNET`;
 
   try {
     const { stdout, stderr } = await exec(command, { cwd: outputDirectory });
@@ -1147,10 +1147,11 @@ async function compileWithVerilator(
 
 async function runSimulation(outputDirectory: string) {
   const command = `make -C obj_dir -f Vmakerchip.mk Vmakerchip && ./obj_dir/Vmakerchip`;
-
   try {
     const { stdout, stderr } = await exec(command, { cwd: outputDirectory });
-    if (stderr) {
+    console.log(`Simulation stdout: ${stdout}`);
+    console.log(`Simulation stderr: ${stderr}`);
+    if (stderr && !stderr.includes("Warning")) {
       throw new Error(stderr);
     }
     vscode.window.showInformationMessage("Simulation completed successfully");
