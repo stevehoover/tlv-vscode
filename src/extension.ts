@@ -1018,6 +1018,16 @@ async function generateAndViewWaveform(filePath: string) {
     // const document = await vscode.workspace.openTextDocument(vcdFilePath);
     // await vscode.window.showTextDocument(document, vscode.ViewColumn.Two);
 
+
+    const isGTKWaveInstalled = await checkGTKWaveInstallation();
+    if (!isGTKWaveInstalled) {
+      vscode.window.showErrorMessage(
+        'GTKWave is not installed. Please install GTKWave to view waveforms.'
+      );
+      return;
+    }
+
+    
     await launchGTKWave(vcdFilePath);
 
     vscode.window.showInformationMessage(
