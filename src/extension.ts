@@ -1040,6 +1040,15 @@ async function launchGTKWave(vcdFilePath: string) {
   }
 }
 
+async function checkGTKWaveInstallation() {
+  try {
+    await exec('gtkwave --version');
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 async function setupSimulationFiles(outputDirectory: string) {
   const makerchipSvContent = `
 module makerchip(input logic clk, input logic reset_async, output logic passed, output logic failed);
