@@ -468,8 +468,6 @@ async function compileTLVerilogWithSandPiper(
         .split("\n")
         .filter((line) => !line.startsWith('`include "sp_default.vh"'))
         .join("\n");
-
-      // Save the generated Verilog code to files in the same directory as the input file
       const outputDirectory = path.dirname(inputFilePath);
       const outputFilePath = path.join(
         outputDirectory,
@@ -484,7 +482,7 @@ async function compileTLVerilogWithSandPiper(
         `Generated Verilog code saved to ${outputFilePath} and ${genFilePath}`
       );
     } else {
-      console.error("Output files not found in response:", data); // For debugging
+      console.error("Output files not found in response:", data); 
       throw new Error(
         "SandPiper SaaS compilation failed: Output files not found in response."
       );
@@ -1027,7 +1025,7 @@ async function generateAndViewWaveform(filePath: string) {
       return;
     }
 
-    
+
     await launchGTKWave(vcdFilePath);
 
     vscode.window.showInformationMessage(
