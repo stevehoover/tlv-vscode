@@ -61,9 +61,14 @@
 		],
 		"themes": [
 			{
-				"label": "TLVerilog",
+				"label": "TL Verilog Light",
 				"uiTheme": "vs",
 				"path": "./themes/tlverilog-color-theme.json"
+			},
+			{
+				"label": "TL Verilog Dark",
+				"uiTheme": "vs-dark",
+				"path": "./themes/tl-verilog-dark-theme.json"
 			}
 		]
 	},
