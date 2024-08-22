@@ -10,6 +10,21 @@ import * as util from "util";
 // This method is called when your extension is activated. Activation is
 // controlled by the activation events defined in package.json.
 export function activate(context: vscode.ExtensionContext) {
+    // System Verilog Hover Provider
+    context.subscriptions.push(
+        vscode.languages.registerHoverProvider('tlverilog',
+            new tlverilogHoverProvider()
+        )
+    );
+
+    // instantiate system verilog module
+    context.subscriptions.push(
+        vscode.commands.registerCommand('extension.tlverilog.instantiateModule',
+            instantiateModuleInteract
+        )
+    );
+}
+
   const editor = vscode.window.activeTextEditor;
   const sandpiperButton = new SandPiperButton();
   sandpiperButton.show();
@@ -133,23 +148,6 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
   context.subscriptions.push(generateWaveformCommand);
-
-  // System Verilog Hover Provider
-  context.subscriptions.push(
-    vscode.languages.registerHoverProvider(
-      "tlverilog",
-      new tlverilogHoverProvider()
-    )
-  );
-
-  // instantiate system verilog module
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "extension.tlverilog.instantiateModule",
-      instantiateModuleInteract
-    )
-  );
-}
 
 class tlverilogHoverProvider implements vscode.HoverProvider {
   private _excludedText: RegExp;
