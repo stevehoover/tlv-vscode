@@ -45,12 +45,17 @@
 			"title": "TL Verilog: Instantiate Module"
 		}],
 		"themes": [
-            {
-                "label": "TLVerilog",
-                "uiTheme": "vs",
-                "path": "./themes/tlverilog-color-theme.json"
-            }
-        ]
+			{
+				"label": "TL Verilog Light",
+				"uiTheme": "vs",
+				"path": "./themes/tlverilog-color-theme.json"
+			},
+			{
+				"label": "TL Verilog Dark",
+				"uiTheme": "vs-dark",
+				"path": "./themes/tl-verilog-dark-theme.json"
+			}
+		]
 	},
 	"activationEvents": [
 		"onLanguage:tlverilog"
@@ -62,9 +67,14 @@
 		"postinstall": "node ./node_modules/vscode/bin/install"
 	},
 	"devDependencies": {
-		"vsce": "^1.28.0",
+		"@types/node": "*",
+		"@types/vscode": "^1.91.0",
 		"typescript": "^2.0.3",
-		"vscode": "^1.0.0",
-		"@types/node": "*"
+		"vsce": "^1.28.0",
+		"vscode": "^1.0.0"
+	},
+	"dependencies": {
+		"axios": "^1.7.2",
+		"verilator": "^0.1.0"
 	}
 }
