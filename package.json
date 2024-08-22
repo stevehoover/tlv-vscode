@@ -12,37 +12,24 @@
 	},
 	"categories": [
 		"Languages",
-		"Themes"
+		 "Themes"
 	],
 	"contributes": {
-		"languages": [
-			{
-				"id": "tlverilog",
-				"aliases": [
-					"TL Verilog",
-					"tlverilog",
-					"tl-verilog"
-				],
-				"extensions": [
-					".tlv",
-					".TLV"
-				],
-				"configuration": "./language-configuration.json"
-			}
-		],
-		"grammars": [
-			{
-				"language": "tlverilog",
-				"scopeName": "source.tlverilog",
-				"path": "./syntaxes/tlverilog.tmLanguage"
-			}
-		],
-		"snippets": [
-			{
-				"language": "tlverilog",
-				"path": "./snippets/snippets.json"
-			}
-		],
+		"languages": [{
+			"id": "tlverilog",
+			"aliases": ["TL Verilog", "tlverilog", "tl-verilog"],
+			"extensions": [".tlv", ".TLV"],
+			"configuration": "./language-configuration.json"
+		}],
+		"grammars": [{
+			"language": "tlverilog",
+			"scopeName": "source.tlverilog",
+			"path": "./syntaxes/tlverilog.tmLanguage"
+		}],
+		"snippets": [{
+			"language": "tlverilog",
+			"path": "./snippets/snippets.json"
+		}],
 		"configuration": {
 			"title": "",
 			"properties": {
@@ -53,12 +40,10 @@
 				}
 			}
 		},
-		"commands": [
-			{
-				"command": "extension.tlverilog.instantiateModule",
-				"title": "TL Verilog: Instantiate Module"
-			}
-		],
+		"commands": [{
+			"command": "extension.tlverilog.instantiateModule",
+			"title": "TL Verilog: Instantiate Module"
+		}],
 		"themes": [
 			{
 				"label": "TL Verilog Light",
