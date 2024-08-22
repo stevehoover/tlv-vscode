@@ -818,13 +818,15 @@ async function generateNavTlvHtml(
 
     const data = response.data;
     console.log(data);
-    const outputKey = Object.keys(data).find(
-      (key) => key.startsWith("out/") && key.endsWith(".html")
-    );
+    const htmlOutputKeyM4 = `out/${filename.replace('.tlv', '.m4out.html')}`;
+    const htmlOutputKeyM5 = `out/${filename.replace('.tlv', '.m5out.html')}`;
 
-    const htmlOutputKey = `out/${filename.replace(".tlv", ".m4out.html")}`;
-    if (outputKey) {
-      const htmlContent = data[outputKey];
+    // const outputKey = Object.keys(data).find(
+    //   (key) => key.startsWith("out/") && key.endsWith(".html")
+    // );
+    const htmlOutputKey =  data[htmlOutputKeyM5] ? htmlOutputKeyM5 : htmlOutputKeyM4;
+    if (data[htmlOutputKey]) {
+      const htmlContent = data[htmlOutputKey];
       return htmlContent;
     } else {
       throw new Error(
