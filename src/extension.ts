@@ -585,9 +585,10 @@ async function generateSvgFile(
         `SandPiper SaaS request failed with status ${response.status}`
       );
     }
-
     const data = response.data;
-    const svgOutputKey = `out/${filename.replace(".tlv", ".m5out_graph.svg")}`;
+    const svgOutputKeyM4 = `out/${filename.replace('.tlv', '.m4out_graph.svg')}`;
+    const svgOutputKeyM5 = `out/${filename.replace('.tlv', '.m5out_graph.svg')}`;
+    const svgOutputKey =  data[svgOutputKeyM5] ? svgOutputKeyM5 : svgOutputKeyM4;
     if (data[svgOutputKey]) {
       const svgContent = data[svgOutputKey];
       const outputDirectory = path.dirname(inputFilePath);
