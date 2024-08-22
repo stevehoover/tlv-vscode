@@ -1,8 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the necessary extensibility types to use in your code below
-import * as vscode from "vscode";
-import * as fs from "fs";
-import * as path from "path";
+import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import axios from "axios";
 import * as child_process from "child_process";
 import * as util from "util";
