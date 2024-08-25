@@ -6,7 +6,7 @@ TL-Verilog support inspired by [SystemVerilog extension](https://github.com/mshr
 
 * Install `TL-Verilog` extension (eq. search "tlv" in extensions tab)
 * Reload VSCode (it will prompt you)
-* Set color theme to `TLVeril0g` ( Cmd/Ctrl + Shift + P -> "color theme") for light theme, and `TL-Verilog Dark` for a dark mode.
+* Set color theme to `TL-Verilog` ( Cmd/Ctrl + Shift + P -> "color theme") for light theme, and `TL-Verilog Dark` for a dark mode.
 * Open .tlv file
 * Enjoy
 
