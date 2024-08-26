@@ -21,11 +21,13 @@ TL-Verilog support inspired by [SystemVerilog extension](https://github.com/mshr
 - Dark Mode: Enjoy a new dark mode theme tailored for better readability and comfort during long coding sessions.
 - Status Bar Integration: Quick access to all the new features through the status bar.
 
+#### Diagram View for FPGA Multiplier Example :-
 
+![tlv](https://github.com/user-attachments/assets/084f06fe-4448-4823-8dd4-dc7453bdeabe)
+
+#### Demo Video :-
 
 https://github.com/user-attachments/assets/9c022f91-a231-4092-a825-acfeb45f8676
-
-
 
 ### Done
 
