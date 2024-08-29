@@ -6,11 +6,28 @@ TL-Verilog support inspired by [SystemVerilog extension](https://github.com/mshr
 
 * Install `TL-Verilog` extension (eq. search "tlv" in extensions tab)
 * Reload VSCode (it will prompt you)
-* Set color theme to `TLVeriolg` ( Cmd/Ctrl + Shift + P -> "color theme")
+* Set color theme to `TL-Verilog` ( Cmd/Ctrl + Shift + P -> "color theme") for light theme, and `TL-Verilog Dark` for a dark mode.
 * Open .tlv file
 * Enjoy
 
 ## Features
+
+### Upcoming
+
+- tlv to sv/gen_sv Compilation: Utilize SandPiper SaaS to compile TL-Verilog code into SystemVerilog (sv) and generated SystemVerilog (gen_sv) files.
+- SVG Diagram Generation: Generate and view SVG diagrams from your TL-Verilog code using SandPiper SaaS directly within the VS Code webviews.
+- NavTLV Viewer: Generate NavTLV files via SandPiper SaaS and view them in a dedicated webview.
+- VCD File Generation and Viewing: Convert Verilog code to VCD files using Verilator and view them in GTKWave.
+- Dark Mode: Enjoy a new dark mode theme tailored for better readability and comfort during long coding sessions.
+- Status Bar Integration: Quick access to all the new features through the status bar.
+
+#### Diagram View for FPGA Multiplier Example :-
+
+![tlv](https://github.com/user-attachments/assets/084f06fe-4448-4823-8dd4-dc7453bdeabe)
+
+#### Demo Video :-
+
+https://github.com/user-attachments/assets/9c022f91-a231-4092-a825-acfeb45f8676
 
 ### Done
 
